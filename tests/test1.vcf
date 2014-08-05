@@ -1,0 +1,5 @@
+#test complex mutations in germline mode
+TEST	4	.	A	AGG	.	PASS		GT:GQ	1|1:200	TEST
+TEST	5	.	C	CTTT	.	PASS		GT:GQ	0|1:200	TEST
+TEST	6	.	CCC	C	.	PASS		GT:GQ	1|1:200	TEST
+TEST	9	.	A	G	.	PASS		GT:GQ	1|0:200	TEST

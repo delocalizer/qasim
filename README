@@ -1,0 +1,12 @@
+==To build locally==
+./setup.py build_ext --inplace
+
+(requires Cython)
+
+==To install==
+./setup.py install 
+
+(requires administrator privileges)
+
+==To clean==
+./setup.py clean

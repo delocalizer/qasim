@@ -1,0 +1,3 @@
+# test overlapping insertions/deletions in somatic mode
+TEST	4	.	A	ATT	.	PASS		GT:GQ	1|1:200
+TEST	5	.	CCCC	C	.	PASS		GT:GQ	1|1:200
