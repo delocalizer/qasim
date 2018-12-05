@@ -1,7 +1,11 @@
 /* The MIT License
 
+   cython/genreads.c is a modified version of the core loop of wgsim.c
+   (https://github.com/lh3/wgsim):
    Copyright (c) 2008 Genome Research Ltd (GRL).
-          2011 Heng Li <lh3@live.co.uk>
+                 2011 Heng Li <lh3@live.co.uk>
+   all other code:
+   Copyright (c) 2013,2018 Conrad Leonard <conrad.leonard@hotmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining
    a copy of this software and associated documentation files (the
@@ -24,7 +28,8 @@
    SOFTWARE.
 */
 
-/* Changes 2013 Conrad Leonard <conrad.leonard@hotmail.com>
+/*
+ * Changes 2013,2018 Conrad Leonard <conrad.leonard@hotmail.com>
  * This code intended to be called from Cython extension qasim.
  *
  * genreads() largely follows wgsim.c (https://github.com/lh3/wgsim)
@@ -32,7 +37,7 @@
  * mutmsk and bitshifting to represent indels. This is much simpler and 
  * correctly generates reverse reads over insertions. Additionally we allow
  * here per-base qualities and sequencing error from per-base Phred score.
-*/
+ */
 
 #include <stdlib.h>
 #include <math.h>
@@ -188,7 +193,7 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             fprintf(fpo[j], "\n+\n%s\n", qstr[j]);
         }
     }
-	fflush(fpout1); fflush(fpout2);
+    fflush(fpout1); fflush(fpout2);
     free(qstr[0]); free(qstr[1]);
     free(pvals[0]); free(pvals[1]);
     free(tmp_seq[0]); free(tmp_seq[1]);

@@ -1,0 +1,3 @@
+build/
+qasim/__pycache__/
+qasim/*.so

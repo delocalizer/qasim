@@ -56,7 +56,7 @@ packages = ['qasim']
 package_dir = {'qasim':'qasim'}
 version = '1.5.0'
 author = 'Conrad Leonard'
-author_email = 'c.leonard@imb.uq.edu.au'
+author_email = 'conrad.leonard@hotmail.com'
 platforms = ['linux']
 ext_qasim = 'qasim.qasim'
 
