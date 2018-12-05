@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os, os.path
-from distutils.core import setup
+from setuptools import setup, find_packages
 from distutils.extension import Extension
 from distutils.dep_util import newer_group
 
@@ -49,7 +49,7 @@ else:
 
 name = 'Qasim'
 cmdclass = {}
-requires = ['numpy']
+requires = ['numpy', 'setuptools']
 include_dirs = ['cython', np_get_include()]
 ext_modules = []
 packages = ['qasim']
@@ -59,6 +59,10 @@ author = 'Conrad Leonard'
 author_email = 'conrad.leonard@hotmail.com'
 platforms = ['linux']
 ext_qasim = 'qasim.qasim'
+license = 'MIT'
+keywords = ['bioinformatics', 'simulation']
+url = "https://github.com/delocalizer/qasim"
+description = "Generate diploid mutations and simulate HTS reads"
 
 
 if HAVECYTHON:
@@ -82,4 +86,9 @@ setup(
     author = author,
     author_email = author_email,
     platforms = platforms,
+    test_suite = 'tests',
+    license = license,
+    url = url,
+    description = description,
+    long_description = description,
 )
