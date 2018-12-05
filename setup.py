@@ -38,14 +38,6 @@ if args.count('sdist'):
               "before creating distribution")
         sys.exit(4)
 
-# for other commands, start with new Cython'ed qasim.c file when possible.
-else:
-    if HAVECYTHON:
-        try:
-            os.remove(os.path.join('cython', 'qasim.c'))
-        except FileNotFoundError:
-            pass
-        
 
 name = 'Qasim'
 cmdclass = {}
