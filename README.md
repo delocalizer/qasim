@@ -6,6 +6,9 @@ Simulate mutations, fragment generation and shotgun sequencing on genomes.
 # build locally (requires Cython)
 ./setup.py build_ext --inplace
 
+# test
+./setup.py test
+
 # install
 ./setup.py install
 
