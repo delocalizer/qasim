@@ -84,6 +84,8 @@ HELP_READS = (
 'element containing <Cycle> and <TallyItem> elements with "count" and '
 '"value" attributes. If -Q is specified, read1 and read2 lengths must be '
 'the same.')
+MSG_CTOR_SEQ_OR_SIZE = (
+'DipSeq constructor must get a sequence or size, not both.\n')
 MSG_NO_SYNC_REF = (
 'A and B sequences of reference do not start at same relative position\n') 
 MSG_REF_NOT_HAPPY = (
@@ -196,14 +198,14 @@ cdef class DipSeq:
         self.fold = fold
 
         if hapseq is not None and size is not None:
-            sys.stderr.write('DipSeq constructor must get a sequence or size, '
-                             'not both.')
+            raise Exception(MSG_CTOR_SEQ_OR_SIZE)
         elif hapseq is not None:
             self.seqA = self.seqB = hapseq
             self.relA = self.relB = np.empty((self.seqA.shape[0],), 'uint32')            
             self.stopA = self.stopB = self.seqA.shape[0]
+            self.fold = self.stopA if self.stopA < self.fold else self.fold
             for i in range(self.stopA):
-                # bases into ints (0,1,2,3)
+                # bases (A,C,G,T,N,-) into ints (0,1,2,3,4,5)
                 self.seqA[i] = self.seqB[i] = nst_nt4_table[self.seqA[i]]
                 # relative position is simply 1-based index
                 self.relA[i] = self.relB[i] = i+1
@@ -463,6 +465,7 @@ cdef class DipSeq:
                         stdout(str(rel[allele][j] % 10))
                     stdout('\n')
                     startln = i+1
+        sys.stdout.flush()
         
 
 cdef inline int update(int allele, 
