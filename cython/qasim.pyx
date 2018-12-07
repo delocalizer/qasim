@@ -608,6 +608,12 @@ def _t_randqual(dist, cycle):
     '''
     return _randqual(dist, cycle)
 
+def reseed(seed):
+    '''
+    Hook for (re)seeding the random number generator
+    '''
+    srand48(seed) 
+
 def get_args():
     '''
     Return options and arguments
@@ -726,7 +732,7 @@ def qasim_cli():
     cdef double **p=NULL
 
     sys.stderr.write("[%s] seed = %i\n" % (__name__, seed))
-    srand48(seed) 
+    reseed(seed) 
 
     fpout1 = fdopen(read1fq.fileno(), 'wb')
     fpout2 = fdopen(read2fq.fileno(), 'wb')
@@ -800,8 +806,7 @@ def qasim_cli():
         sys.stderr.write("[%s] generating %i reads from sequence %s\n" % 
                      (__name__, n_grm, mutseq.seqid))
         if n_grm:
-            # reseed to help testing
-            # srand48(seed) 
+            # reseed(seed) # reseed during testing 
             genreads(fpout1, fpout2, &(mutseq.seqA[0]), &(mutseq.seqB[0]),
                      &(mutseq.relA[0]), &(mutseq.relB[0]), 
                      mutseq.stopA, mutseq.stopB,
@@ -834,8 +839,7 @@ def qasim_cli():
             sys.stderr.write("[%s] generating %i reads from sequence %s\n" % 
                          (__name__, n_som, mutseq2.seqid))
             if n_som:
-                # reseed to help testing
-                # srand48(seed) 
+                # reseed(seed) # reseed during testing 
                 genreads(fpout1, fpout2, &(mutseq2.seqA[0]), &(mutseq2.seqB[0]),
                          &(mutseq2.relA[0]), &(mutseq2.relB[0]), 
                          mutseq2.stopA, mutseq2.stopB,
