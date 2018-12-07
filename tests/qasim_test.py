@@ -359,6 +359,37 @@ class TestQasim(unittest.TestCase):
             mean_qual = sum(samples) / float(len(samples))  # sample mean
             self.assertAlmostEqual(mean_qual / mu_qual, 1.0, delta=0.01)
 
+    def test_integration_1(self):
+        """somatic mode with mutations specified by input VCFs"""
+        # equivalent to the following command lines:
+        # ./qasim_wrapper.py \
+        #   --seed 12345678 \
+        #   --sample-name c9a6be94-bdb7-4c0d-a89d-4addbf76e486 \
+        #   --vcf-input tests/resources/germline.vcf \
+        #   --num-pairs 2000 \
+        #   --quals-from tests/resources/test.qp.xml \
+        #   --length1 150 \
+        #   --length2 150 \
+        #   tests/resources/chr4_49207001_49227000.fa \
+        #   control.30x.read1.fastq \
+        #   control.30x.read2.fastq
+        #
+        # ./qasim_wrapper.py \
+        #   --seed 12345678 \
+        #   --sample-name c9a6be94-bdb7-4c0d-a89d-4addbf76e486 \
+        #   --vcf-input tests/resources/germline.vcf \
+        #   --somatic-mode \
+        #   --sample-name2 d44d739c-0143-4350-bba5-72dd068e05fd \
+        #   --contamination 0.3 \
+        #   --vcf-input2 tests/resources/somatic.vcf \
+        #   --num-pairs 4000 \
+        #   --quals-from tests/resources/test.qp.xml \
+        #   --length1 150 \
+        #   --length2 150 \
+        #   tests/resources/chr4_49207001_49227000.fa \
+        #   test.60x.read1.fastq \
+        #   test.60x.read2.fastq
+
 
 if __name__ == '__main__':
     unittest.main()
