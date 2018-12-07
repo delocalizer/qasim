@@ -7,12 +7,10 @@ from contextlib import contextmanager
 from io import StringIO
 from os.path import join as path_join
 from os.path import dirname
-from random import randint
 from xml.etree import ElementTree as ET
 
-from qasim.qasim import *
-from qasim.qasim import _t_randqual
-
+from qasim.qasim import EXCEPT_MUT, MSG_SKIP_MUT, MSG_CTOR_SEQ_OR_SIZE, \
+        VCF, DipSeq, read_fasta, gen_quals, _t_randqual, reseed
 
 # test resources are located in the current dir
 test0fa = path_join(dirname(__file__), 'resources/test0.fa')
@@ -73,12 +71,10 @@ class TestVcf(unittest.TestCase):
             fh.seek(0)
             lines = fh.readlines()
             self.assertEqual(''.join(lines[:6]), self.test0vcf.header)
-            self.assertEqual(''.join(lines[6:]),
-                '\n'.join(
+            self.assertEqual(
+                ''.join(lines[6:]), '\n'.join(
                     '\t'.join(str(r[c]) for c in self.test0vcf.columns)
-                        for r in self.test0vcf.records
-                    ) + '\n'
-                ) 
+                    for r in self.test0vcf.records) + '\n')
 
     def test_fromfile(self):
         vcf = VCF.fromfile(test0vcf, "sample1")
@@ -97,11 +93,11 @@ class TestDipSeq(unittest.TestCase):
         d = DipSeq("T", "TEST", hapseq=bytearray([65, 67, 71, 84, 78, 45]))
         self.assertEqual(d.stopA, 6)
         self.assertEqual(d.stopB, 6)
-        self.assertEqual(list(d.seqA), [0,1,2,3,4,5])
+        self.assertEqual(list(d.seqA), [0, 1, 2, 3, 4, 5])
 
     def test_ctor_seq_and_size(self):
         with self.assertRaisesRegex(Exception, MSG_CTOR_SEQ_OR_SIZE):
-            d = DipSeq("T", "TEST", bytearray([65]), 1)
+            DipSeq("T", "TEST", bytearray([65]), 1)
 
     def test_write(self):
         d = DipSeq("T", "TEST", hapseq=bytearray([65, 67, 71, 84, 78]))
@@ -130,17 +126,18 @@ class TestDipSeq(unittest.TestCase):
         indel_frac = 0.15
         indel_extend = 0.3
         max_insertion = 1000
-        reseed(12345678) # deterministic iff we set the seed
+        reseed(12345678)  # deterministic iff we set the seed
         DipSeq.mutagen(refseq, vcf, mut_rate, homo_frac, indel_frac,
-                indel_extend, max_insertion)
+                       indel_extend, max_insertion)
         out = StringIO()
         vcf.write(out)
         with open(mut_vcf) as fh:
             self.assertEqual(out.getvalue(), ''.join(fh.readlines()))
-        mutseq = DipSeq(refseq.seqid + '.mut',
-                refseq.description,
-                size = refseq.seqA.shape[0] * 2,
-                fold = refseq.fold)
+        mutseq = DipSeq(
+            refseq.seqid + '.mut',
+            refseq.description,
+            size=refseq.seqA.shape[0] * 2,
+            fold=refseq.fold)
         mutseq.transform(refseq, vcf)
         out = StringIO()
         mutseq.write(out)
@@ -151,13 +148,14 @@ class TestDipSeq(unittest.TestCase):
         """germline het & hom snps"""
         vcf = VCF.fromfile(test0vcf, "sample1")
         refseq = next(read_fasta(test0fa))
-        mutseq = DipSeq(refseq.seqid + '.mut',
-                refseq.description,
-                size = refseq.seqA.shape[0] * 2,
-                fold = refseq.fold)
+        mutseq = DipSeq(
+            refseq.seqid + '.mut',
+            refseq.description,
+            size=refseq.seqA.shape[0] * 2,
+            fold=refseq.fold)
         mutseq.transform(refseq, vcf)
         for i in range(refseq.stopA):
-            POS = i + 1 # VCF coords
+            POS = i + 1               # VCF coords
             if (POS == 5):
                 self.assertEqual(base(mutseq.seqA[i]), base(refseq.seqA[i]))
                 self.assertEqual(base(mutseq.seqB[i]), "G")
@@ -176,32 +174,42 @@ class TestDipSeq(unittest.TestCase):
         """simple het & hom indels"""
         vcf = VCF.fromfile(test1vcf, "sample1")
         refseq = next(read_fasta(test0fa))
-        mutseq = DipSeq(refseq.seqid + '.mut',
-                refseq.description,
-                size = refseq.seqA.shape[0] * 2,
-                fold = refseq.fold)
+        mutseq = DipSeq(
+            refseq.seqid + '.mut',
+            refseq.description,
+            size=refseq.seqA.shape[0] * 2,
+            fold=refseq.fold)
         mutseq.transform(refseq, vcf)
         insertion_1 = range(4, 7)
-        self.assertEqual(''.join(base(mutseq.seqA[POS-1]) for POS in insertion_1), "AGG")
-        self.assertEqual(list(mutseq.relA[POS-1] for POS in insertion_1), [4,4,4])
+        self.assertEqual(
+            ''.join(base(mutseq.seqA[POS-1]) for POS in insertion_1), "AGG")
+        self.assertEqual(
+            list(mutseq.relA[POS-1] for POS in insertion_1), [4, 4, 4])
         insertion_2 = range(5, 9)
-        self.assertEqual(''.join(base(mutseq.seqB[POS-1]) for POS in insertion_2), "CTTT")
-        self.assertEqual(list(mutseq.relB[POS-1] for POS in insertion_2), [5,5,5,5])
+        self.assertEqual(
+            ''.join(base(mutseq.seqB[POS-1]) for POS in insertion_2), "CTTT")
+        self.assertEqual(
+            list(mutseq.relB[POS-1] for POS in insertion_2), [5, 5, 5, 5])
         deletion_1A = range(15, 17)
         deletion_1B = range(16, 18)
-        self.assertEqual(''.join(base(mutseq.seqA[POS-1]) for POS in deletion_1A), "CC")
-        self.assertEqual(list(mutseq.relA[POS-1] for POS in deletion_1A), [13, 16])
-        self.assertEqual(''.join(base(mutseq.seqB[POS-1]) for POS in deletion_1B), "CC")
-        self.assertEqual(list(mutseq.relB[POS-1] for POS in deletion_1B), [13, 16])
+        self.assertEqual(
+            ''.join(base(mutseq.seqA[POS-1]) for POS in deletion_1A), "CC")
+        self.assertEqual(
+            list(mutseq.relA[POS-1] for POS in deletion_1A), [13, 16])
+        self.assertEqual(
+            ''.join(base(mutseq.seqB[POS-1]) for POS in deletion_1B), "CC")
+        self.assertEqual(
+            list(mutseq.relB[POS-1] for POS in deletion_1B), [13, 16])
 
     def test_transform_2(self):
         """complex overlapping mutations"""
         vcf = VCF.fromfile(test2vcf, "sample1")
         refseq = next(read_fasta(test0fa))
-        mutseq = DipSeq(refseq.seqid + '.mut',
-                refseq.description,
-                size = refseq.seqA.shape[0] * 2,
-                fold = refseq.fold)
+        mutseq = DipSeq(
+            refseq.seqid + '.mut',
+            refseq.description,
+            size=refseq.seqA.shape[0] * 2,
+            fold=refseq.fold)
         mutseq.transform(refseq, vcf)
         out = StringIO()
         mutseq.write(out)
@@ -222,10 +230,11 @@ class TestDipSeq(unittest.TestCase):
         somvcf = VCF.fromfile(test3somvcf)
         refseq = next(read_fasta(test0fa))
 
-        grmseq = DipSeq(refseq.seqid + '.grm',
-                refseq.description,
-                size = refseq.seqA.shape[0] * 2,
-                fold = refseq.fold)
+        grmseq = DipSeq(
+            refseq.seqid + '.grm',
+            refseq.description,
+            size=refseq.seqA.shape[0] * 2,
+            fold=refseq.fold)
         grmseq.transform(refseq, grmvcf)
         out = StringIO()
         grmseq.write(out)
@@ -237,10 +246,11 @@ class TestDipSeq(unittest.TestCase):
             "AAAAGGCCAAAACCCC\n"
             "1234447890123456\n"))
 
-        somseq = DipSeq(refseq.seqid + '.som',
-                refseq.description,
-                size = refseq.seqA.shape[0] * 2,
-                fold = refseq.fold)
+        somseq = DipSeq(
+            refseq.seqid + '.som',
+            refseq.description,
+            size=refseq.seqA.shape[0] * 2,
+            fold=refseq.fold)
         with captured_output() as (out, err):
             expected_msg = MSG_SKIP_MUT % {'allele': 1, 'POS': 5}
             somseq.transform(grmseq, somvcf)
@@ -254,19 +264,20 @@ class TestDipSeq(unittest.TestCase):
             "AAAATTGGCAAAACCCC\n"
             "12344444590123456\n"
             ">TEST.som.1 small fasta for testing\n"
-            "AAAATTGGCCAAAACCCC\n" 
+            "AAAATTGGCCAAAACCCC\n"
             "123444447890123456\n"))
 
     def test_transform_4(self):
         """disallow mutations overlapping deletions in same vcf"""
         vcf = VCF.fromfile(test4vcf, "sample1")
         refseq = next(read_fasta(test0fa))
-        mutseq = DipSeq(refseq.seqid + '.mut',
-                refseq.description,
-                size = refseq.seqA.shape[0] * 2,
-                fold = refseq.fold)
+        mutseq = DipSeq(
+            refseq.seqid + '.mut',
+            refseq.description,
+            size=refseq.seqA.shape[0] * 2,
+            fold=refseq.fold)
         expected_msg = EXCEPT_MUT % {'POS': 7, 'OLDPOS': 5}
-        with self.assertRaisesRegex(Exception, expected_msg):            
+        with self.assertRaisesRegex(Exception, expected_msg):
             mutseq.transform(refseq, vcf)
 
 
@@ -301,17 +312,18 @@ class TestQasim(unittest.TestCase):
             4: [(2, 7000), (8, 8000), (12, 8000), (22, 8000), (27, 8000),
                 (32, 8000), (37, 8000), (41, 8000)]
         }
+
         def avg(counts):
             """counts = [(qual, cumulative_count), ...]"""
             return sum(
                 counts[i][0] *
-                    (counts[i][1] - (0 if i == 0 else counts[i-1][1]))
-                        for i in range(len(counts))) / float(counts[-1][1])
+                (counts[i][1] - (0 if i == 0 else counts[i-1][1]))
+                for i in range(len(counts))) / float(counts[-1][1])
 
-        mu_1 = avg(dist[1]) # = 22.625
-        mu_2 = avg(dist[2]) # = 39
-        mu_3 = avg(dist[3]) # = 40.5
-        mu_4 = avg(dist[4]) # = 2.75
+        mu_1 = avg(dist[1])  # = 22.625
+        mu_2 = avg(dist[2])  # = 39
+        mu_3 = avg(dist[3])  # = 40.5
+        mu_4 = avg(dist[4])  # = 2.75
         N = 100000
         mean_1 = sum(_t_randqual(dist, 1) for i in range(N)) / float(N)
         mean_2 = sum(_t_randqual(dist, 2) for i in range(N)) / float(N)
@@ -324,10 +336,10 @@ class TestQasim(unittest.TestCase):
 
     def test_gen_quals(self):
         """check that P values match Q scores, and sample is representative"""
-        read_length = 150 
+        read_length = 150
         num_quals = 10000
-        qvals = np.ndarray((num_quals, read_length), dtype='u1')                    
-        pvals = np.ndarray((num_quals, read_length))             
+        qvals = np.ndarray((num_quals, read_length), dtype='u1')
+        pvals = np.ndarray((num_quals, read_length))
         gen_quals(testqpxml, read_length, num_quals, qvals, pvals)
 
         for sample in range(num_quals):
@@ -338,12 +350,15 @@ class TestQasim(unittest.TestCase):
         Q = doc.getroot().find('.//QUAL')
         for cyclenum in range(1, read_length+1):
             cycle = Q.find(".//Cycle[@value='%s']" % cyclenum)
-            weights = sum(int(t.get('value')) * int(t.get('count')) for t in cycle.findall('TallyItem'))
-            counts = sum(int(t.get('count')) for t in cycle.findall('TallyItem'))
-            mu_qual = weights / float(counts) # population mean
+            weights = sum(int(t.get('value')) * int(t.get('count'))
+                          for t in cycle.findall('TallyItem'))
+            counts = sum(int(t.get('count'))
+                         for t in cycle.findall('TallyItem'))
+            mu_qual = weights / float(counts)               # population mean
             samples = qvals[:, cyclenum-1]
-            mean_qual = sum(samples) / float(len(samples)) # sample mean
+            mean_qual = sum(samples) / float(len(samples))  # sample mean
             self.assertAlmostEqual(mean_qual/mu_qual, 1.0, delta=0.01)
+
 
 if __name__ == '__main__':
     unittest.main()
