@@ -582,7 +582,7 @@ def gen_quals(str filename, int readlen, int num_quals, char[:,:] qvals, double[
     for i in range(num_quals):
         for j in range(readlen):
             qvals[i,j] = _randqual(cumdist, j+1)
-            pvals[i,j] = 10 ** (qvals[i,j]/-10.0)
+            pvals[i,j] = 10 ** (qvals[i,j]/-10.0) # Phred definition
 
     
 cdef inline int _randqual(dict dist, int cycle):
@@ -602,6 +602,11 @@ cdef inline int _randqual(dict dist, int cycle):
             return qual
     return 0 
 
+def _t_randqual(dist, cycle):
+    '''
+    Shim for unit testing the cdef inline method _randqual
+    '''
+    return _randqual(dist, cycle)
 
 def get_args():
     '''

@@ -1,3 +1,4 @@
+import numpy as np
 import sys
 import tempfile
 import unittest
@@ -6,8 +7,11 @@ from contextlib import contextmanager
 from io import StringIO
 from os.path import join as path_join
 from os.path import dirname
+from random import randint
+from xml.etree import ElementTree as ET
 
 from qasim.qasim import *
+from qasim.qasim import _t_randqual
 
 
 # test resources are located in the current dir
@@ -18,6 +22,7 @@ test2vcf = path_join(dirname(__file__), 'test2.vcf')
 test3grmvcf = path_join(dirname(__file__), 'test3.1.vcf')
 test3somvcf = path_join(dirname(__file__), 'test3.2.vcf')
 test4vcf = path_join(dirname(__file__), 'test4.vcf')
+testqpxml = path_join(dirname(__file__), 'test.qp.xml')
 
 
 @contextmanager
@@ -242,6 +247,67 @@ class TestQasim(unittest.TestCase):
                     ">TEST.1 small fasta for testing\n"
                     "AAAACCCCAAAACCCC\n"
                     "1234567890123456\n"))
+
+    def test_randqual(self):
+        """random choice from cumulative frequency distribution"""
+        # dist = { cycle: (qual, cumulative_count) }
+        dist = {
+            # All 8 quals equally likely
+            1: [(2, 1000), (8, 2000), (12, 3000), (22, 4000), (27, 5000),
+                (32, 6000), (37, 7000), (41, 8000)],
+            # high-end bias: 41 and 37 equally likely, others zero
+            2: [(2, 0), (8, 0), (12, 0), (22, 0), (27, 0), (32, 0), (37, 4000),
+                (41, 8000)],
+            # very high-end bias: 41 is 7x more likely than 37, others zero
+            3: [(2, 0), (8, 0), (12, 0), (22, 0), (27, 0), (32, 0), (37, 1000),
+                (41, 8000)],
+            # low-end bias: 2 is 7x more likely than 8, others zero
+            4: [(2, 7000), (8, 8000), (12, 8000), (22, 8000), (27, 8000),
+                (32, 8000), (37, 8000), (41, 8000)]
+        }
+        def popmean(counts):
+            """counts = [(qual, cumulative_count), ...]"""
+            return sum(
+                counts[i][0] *
+                    (counts[i][1] - (0 if i == 0 else counts[i-1][1]))
+                        for i in range(len(counts))) / float(counts[-1][1])
+
+        mu_1 = popmean(dist[1]) # = 22.625
+        mu_2 = popmean(dist[2]) # = 39
+        mu_3 = popmean(dist[3]) # = 40.5
+        mu_4 = popmean(dist[4]) # = 2.75
+        N = 100000
+        mean_rand_1 = sum(_t_randqual(dist, 1) for i in range(N)) / float(N)
+        mean_rand_2 = sum(_t_randqual(dist, 2) for i in range(N)) / float(N)
+        mean_rand_3 = sum(_t_randqual(dist, 3) for i in range(N)) / float(N)
+        mean_rand_4 = sum(_t_randqual(dist, 4) for i in range(N)) / float(N)
+        self.assertAlmostEqual(mu_1, mean_rand_1, 1)
+        self.assertAlmostEqual(mu_2, mean_rand_2, 1)
+        self.assertAlmostEqual(mu_3, mean_rand_3, 1)
+        self.assertAlmostEqual(mu_4, mean_rand_4, 1)
+
+    def test_gen_quals(self):
+        """check that P values match Q scores, and sample is representative"""
+        read_length = 150 
+        num_quals = 10000
+        qvals = np.ndarray((num_quals, read_length), dtype='u1')                    
+        pvals = np.ndarray((num_quals, read_length))             
+        gen_quals(testqpxml, read_length, num_quals, qvals, pvals)
+
+        for sample in range(num_quals):
+            for q, p in zip(qvals[sample], pvals[sample]):
+                self.assertEqual(p, 10 ** (q/-10))
+
+        doc = ET.parse(testqpxml)
+        Q = doc.getroot().find('.//QUAL')
+        for cyclenum in range(1, read_length+1):
+            cycle = Q.find(".//Cycle[@value='%s']" % cyclenum)
+            weights = sum(int(t.get('value')) * int(t.get('count')) for t in cycle.findall('TallyItem'))
+            counts = sum(int(t.get('count')) for t in cycle.findall('TallyItem'))
+            mu_qual = weights / float(counts) # population mean
+            samples = qvals[:, cyclenum-1]
+            mean_qual = sum(samples) / float(len(samples)) # sample mean
+            self.assertAlmostEqual(mean_qual/mu_qual, 1.0, delta=0.01)
 
 if __name__ == '__main__':
     unittest.main()
