@@ -22,24 +22,24 @@ cdef extern from "<stdlib.h>":
     void srand48(long)
 
 
-cdef extern int genreads(FILE *fpout1, 
-                         FILE *fpout2, 
-                         uint8_t *s1, 
+cdef extern int genreads(FILE *fpout1,
+                         FILE *fpout2,
+                         uint8_t *s1,
                          uint8_t *s2,
-                         uint32_t *rel1, 
-                         uint32_t *rel2, 
-                         uint32_t len1, 
+                         uint32_t *rel1,
+                         uint32_t *rel2,
+                         uint32_t len1,
                          uint32_t len2,
-                         uint64_t n_pairs, 
-                         int dist, 
-                         int std_dev, 
-                         int size_l, 
+                         uint64_t n_pairs,
+                         int dist,
+                         int std_dev,
+                         int size_l,
                          int size_r,
-                         double error_rate, 
-                         double ambig_frac, 
+                         double error_rate,
+                         double ambig_frac,
                          const char *seqname,
                          int num_quals,
-                         double **p, 
+                         double **p,
                          char **q)
 
 
@@ -63,44 +63,44 @@ cdef uint8_t *nst_nt4_table = [
 ]
 
 
-cdef bool WGSIM_MODE=False
+cdef bool WGSIM_MODE = False
 
 
 HELP_SOMATIC_MODE = (
-'If "-S, --somatic-mode" is specified then mutation and read generation will '
-'be run /twice/ - the first time generating "germline" mutations, the second '
-'time generating "somatic" mutations. Specifying the other options in this '
-'group has no effect if not in somatic mode.')
+    'If "-S, --somatic-mode" is specified then mutation and read generation will '
+    'be run /twice/ - the first time generating "germline" mutations, the second '
+    'time generating "somatic" mutations. Specifying the other options in this '
+    'group has no effect if not in somatic mode.')
 HELP_WGSIM_MODE = (
-'In this mode insertions are generated using the same logic as original wgsim.c'
-' - i.e. max_insertion is set to 4, and insert bases are reversed with respect '
-'to generation order.')
+    'In this mode insertions are generated using the same logic as original wgsim.c'
+    ' - i.e. max_insertion is set to 4, and insert bases are reversed with respect '
+    'to generation order.')
 HELP_READS = (
-'If -e is specified then a fixed error rate (and quality string) is used '
-'along the entire read. If -Q is specified then quality scores will be '
-'randomly generated according to the distribution specified in the file, '
-'and the error rate and quality value is calculated per base. The file '
-'specified by -Q should be a qprofiler-like XML document with a <QUAL> '
-'element containing <Cycle> and <TallyItem> elements with "count" and '
-'"value" attributes. If -Q is specified, read1 and read2 lengths must be '
-'the same.')
+    'If -e is specified then a fixed error rate (and quality string) is used '
+    'along the entire read. If -Q is specified then quality scores will be '
+    'randomly generated according to the distribution specified in the file, '
+    'and the error rate and quality value is calculated per base. The file '
+    'specified by -Q should be a qprofiler-like XML document with a <QUAL> '
+    'element containing <Cycle> and <TallyItem> elements with "count" and '
+    '"value" attributes. If -Q is specified, read1 and read2 lengths must be '
+    'the same.')
 MSG_CTOR_SEQ_OR_SIZE = (
-'DipSeq constructor must get a sequence or size, not both.\n')
+    'DipSeq constructor must get a sequence or size, not both.\n')
 MSG_NO_SYNC_REF = (
-'A and B sequences of reference do not start at same relative position\n') 
+    'A and B sequences of reference do not start at same relative position\n')
 MSG_REF_NOT_HAPPY = (
-'A and B sequences of reference are not haploid at %i\'th value\n')
+    'A and B sequences of reference are not haploid at %i\'th value\n')
 MSG_UNKGT = 'Unhandled genotype at %s %i %s %s %s\n'
 MSG_UNKVAR = 'Unhandled variant type %s %i %s %s\n'
 MSG_SKIP_MUT = (
-'Mutation at %(POS)i in allele %(allele)i is in deleted region of original, '
-'skipping...\n')
+    'Mutation at %(POS)i in allele %(allele)i is in deleted region of original, '
+    'skipping...\n')
 EXCEPT_MUT = (
-'Mutation specified at POS %(POS)i is unsupported, being within a previously '
-'specified deletion at POS %(OLDPOS)i.') 
+    'Mutation specified at POS %(POS)i is unsupported, being within a previously '
+    'specified deletion at POS %(OLDPOS)i.')
 EXCEPT_CYCLENUM = (
-'Cycles found in file: %i, specified read length: %i: cycles must be 1 + '
-'read length')
+    'Cycles found in file: %i, specified read length: %i: cycles must be 1 + '
+    'read length')
 
 
 cdef class VCF:
@@ -113,12 +113,13 @@ cdef class VCF:
     def __cinit__(self, sample='SAMPLE'):
         self.sample = sample
         self.header = (
-        "##fileformat=VCFv4.1\n"
-        "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">\n"
-        "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic event\">\n"
-        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-        "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">\n"
-        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t%s\n" % self.sample)
+            "##fileformat=VCFv4.1\n"
+            "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">\n"
+            "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic event\">\n"
+            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+            "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">\n"
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t%s\n" %
+            self.sample)
         self.columns = ['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL',
                         'FILTER', 'INFO', 'FORMAT', 'SAMPLE']
         self.records = []
@@ -135,20 +136,25 @@ cdef class VCF:
         cdef int POS
         cdef str CHROM, REF, ALT, GT
         cdef object iterrec
-        self.records.sort(key=lambda x:(x['#CHROM'], x['POS'], len(x['REF']), len(x['ALT'])))
-        iterrec = iter(self.records) 
+        self.records.sort(
+            key=lambda x: (
+                x['#CHROM'],
+                x['POS'],
+                len(x['REF']),
+                len(x['ALT'])))
+        iterrec = iter(self.records)
         while True:
             try:
                 r = iterrec.__next__()
             except StopIteration:
                 r = {}
-            CHROM  = r.get('#CHROM','')
-            POS    = r.get('POS', 0)
-            REF    = r.get('REF','')
-            ALT    = r.get('ALT','')
-            GT     = r.get('SAMPLE','0|0')[:3]
+            CHROM = r.get('#CHROM', '')
+            POS = r.get('POS', 0)
+            REF = r.get('REF', '')
+            ALT = r.get('ALT', '')
+            GT = r.get('SAMPLE', '0|0')[:3]
             yield CHROM, POS, REF, ALT, GT
-            
+
     def write(self, dest):
         '''
         @param dest: file or stream or anything with write and flush.
@@ -156,7 +162,8 @@ cdef class VCF:
         cdef dict r
         dest.write(self.header)
         for r in self.records:
-            dest.write('\t'.join(map(str, [ r.get(col,'') for col in self.columns ])) + '\n')
+            dest.write('\t'.join(
+                map(str, [r.get(col, '') for col in self.columns])) + '\n')
 
     @classmethod
     def fromfile(cls, filename, sample='SAMPLE'):
@@ -170,15 +177,16 @@ cdef class VCF:
         v = cls(sample)
         with open(filename, 'rt') as fh:
             for line in fh:
-                if line.startswith('#'): continue
-                tkns = line.strip().split('\t') 
+                if line.startswith('#'):
+                    continue
+                tkns = line.strip().split('\t')
                 if len(tkns):
-                    r = { v.columns[i] : tkns[i] for i in range(len(v.columns)) }
+                    r = {v.columns[i]: tkns[i] for i in range(len(v.columns))}
                     r['POS'] = int(r['POS'])
                     v.records.append(r)
         return v
 
-    
+
 cdef class DipSeq:
 
     cdef public str seqid, description
@@ -201,14 +209,14 @@ cdef class DipSeq:
             raise Exception(MSG_CTOR_SEQ_OR_SIZE)
         elif hapseq is not None:
             self.seqA = self.seqB = hapseq
-            self.relA = self.relB = np.empty((self.seqA.shape[0],), 'uint32')            
+            self.relA = self.relB = np.empty((self.seqA.shape[0],), 'uint32')
             self.stopA = self.stopB = self.seqA.shape[0]
             self.fold = self.stopA if self.stopA < self.fold else self.fold
             for i in range(self.stopA):
                 # bases (A,C,G,T,N,-) into ints (0,1,2,3,4,5)
                 self.seqA[i] = self.seqB[i] = nst_nt4_table[self.seqA[i]]
                 # relative position is simply 1-based index
-                self.relA[i] = self.relB[i] = i+1
+                self.relA[i] = self.relB[i] = i + 1
         else:
             self.seqA = np.empty((size,), 'uint8')
             self.seqB = np.empty((size,), 'uint8')
@@ -216,7 +224,7 @@ cdef class DipSeq:
             self.relB = np.empty((size,), 'uint32')
             self.stopA = size
             self.stopB = size
-            
+
     cdef get_ptrs(self, uint8_t *seq[2], uint32_t *rel[2]):
         seq[0] = &(self.seqA[0])
         seq[1] = &(self.seqB[0])
@@ -226,11 +234,11 @@ cdef class DipSeq:
     cdef get_stop(self, uint32_t stop[2]):
         stop[0] = self.stopA
         stop[1] = self.stopB
-            
+
     @classmethod
     def mutagen(cls,
                 DipSeq reference not None,
-                VCF vcf not None, 
+                VCF vcf not None,
                 double mut_rate,
                 double homo_frac,
                 double indel_frac,
@@ -240,16 +248,16 @@ cdef class DipSeq:
         '''
         Generate mutations on haploid reference sequence, updating vcf in-place.
         '''
-        cdef int allele, deleting=0, appended=0 
+        cdef int allele, deleting = 0, appended = 0
         cdef uint8_t *refseq[2], refbase, prevref, snp, j
-        cdef uint32_t i, *refrel[2], rstop[2], POS 
-        cdef str seqid=reference.seqid
-        cdef list records=vcf.records, alt
-        cdef dict vrec={}
-        cdef dict homrec={'ID':'.', 'QUAL':'.', 'FILTER': 'PASS', 'INFO':'', 
-                          'FORMAT':'GT:GQ', 'SAMPLE':'1|1:200'}
-        cdef dict hetrec={'ID':'.', 'QUAL':'.', 'FILTER': 'PASS', 'INFO':'',
-                          'FORMAT':'GT:GQ'}
+        cdef uint32_t i, *refrel[2], rstop[2], POS
+        cdef str seqid = reference.seqid
+        cdef list records = vcf.records, alt
+        cdef dict vrec = {}
+        cdef dict homrec = {'ID': '.', 'QUAL': '.', 'FILTER': 'PASS', 'INFO': '',
+                            'FORMAT': 'GT:GQ', 'SAMPLE': '1|1:200'}
+        cdef dict hetrec = {'ID': '.', 'QUAL': '.', 'FILTER': 'PASS', 'INFO': '',
+                            'FORMAT': 'GT:GQ'}
 
         if somatic_mode:
             homrec['INFO'] += 'SOMATIC;'
@@ -285,8 +293,12 @@ cdef class DipSeq:
                     appended = 1
                     deleting = 0
 
-            if refbase < 4 and drand48() < mut_rate:                  
-                vrec = {'#CHROM':seqid, 'POS':POS, 'REF':"ACGT"[refbase], 'ALT':''}
+            if refbase < 4 and drand48() < mut_rate:
+                vrec = {
+                    '#CHROM': seqid,
+                    'POS': POS,
+                    'REF': "ACGT"[refbase],
+                    'ALT': ''}
                 appended = 0
 
                 if drand48() >= indel_frac:                         # =SNP=
@@ -296,7 +308,7 @@ cdef class DipSeq:
                         vrec.update(homrec)
                     else:                                           # het SNP
                         allele = 0 if drand48() < 0.5 else 1
-                        hetrec['SAMPLE'] = '%s|%s:200' % (1-allele, allele)
+                        hetrec['SAMPLE'] = '%s|%s:200' % (1 - allele, allele)
                         vrec.update(hetrec)
                     records.append(vrec)
                     appended = 1
@@ -304,44 +316,46 @@ cdef class DipSeq:
                 else:
                     if drand48() < 0.5:                             # =DEL=
                         deleting = 1
-                        vrec.update({'POS':POS - 1,
-                                     'REF':"ACGTN"[prevref] + "ACGT"[refbase], 
-                                     'ALT':"ACGTN"[prevref]})
+                        vrec.update({'POS': POS - 1,
+                                     'REF': "ACGTN"[prevref] + "ACGT"[refbase],
+                                     'ALT': "ACGTN"[prevref]})
                         if drand48() < homo_frac:                   # hom DEL
                             vrec.update(homrec)
                         else:                                       # het DEL
                             allele = 0 if drand48() < 0.5 else 1
-                            hetrec['SAMPLE'] = '%s|%s:200' % (1-allele, allele)
+                            hetrec['SAMPLE'] = '%s|%s:200' % (
+                                1 - allele, allele)
                             vrec.update(hetrec)
 
                     else:                                           # =INS=
-                        alt = insertion(refbase, indel_extend, max_insertion) 
-                        vrec['ALT'] = ''.join([ "ACGT"[j] for j in alt ]) 
+                        alt = insertion(refbase, indel_extend, max_insertion)
+                        vrec['ALT'] = ''.join(["ACGT"[j] for j in alt])
                         if drand48() < homo_frac:                   # hom INS
                             vrec.update(homrec)
                         else:                                       # het INS
                             allele = 0 if drand48() < 0.5 else 1
-                            hetrec['SAMPLE'] = '%s|%s:200' % (1-allele, allele)
+                            hetrec['SAMPLE'] = '%s|%s:200' % (
+                                1 - allele, allele)
                             vrec.update(hetrec)
                         records.append(vrec)
                         appended = 1
-                
+
             prevref = refbase
 
         # any unfinished deletion
         if vrec.get('#CHROM') and not appended:
             records.append(vrec)
 
-    def transform(self, 
-                  DipSeq original not None, 
+    def transform(self,
+                  DipSeq original not None,
                   VCF vcf):
         '''
         Apply mutations from a vcf to a diploid sequence, updating self in place.
         For insertions and deletions, the REF and ALT sequences respectively
-        must be a single base only.  
+        must be a single base only.
         '''
-        # gt is coded phased genotype 0=(0|0), 1=(1|0), 2=(0|1), 3=(1|1) 
-        cdef int allele, c, r, snp, ins, gt=0, refsz, altsz
+        # gt is coded phased genotype 0=(0|0), 1=(1|0), 2=(0|1), 3=(1|1)
+        cdef int allele, c, r, snp, ins, gt = 0, refsz, altsz
         cdef uint8_t *origseq[2], *mutseq[2]
         cdef uint32_t *origrel[2], *mutrel[2], opos[2], mpos[2], ostop[2], mstop[2], POS, OLDPOS
         cdef str alt, seqid = original.seqid.split('.')[0]
@@ -353,13 +367,14 @@ cdef class DipSeq:
         original.get_stop(ostop)
         self.get_ptrs(mutseq, mutrel)
         self.get_stop(mstop)
- 
+
         # apply mutations to two original alleles independently
         opos[0] = opos[1] = 0
         mpos[0] = mpos[1] = 0
         for allele in range(2):
 
-            # at given location tuples() returns snps, insertions then deletions
+            # at given location tuples() returns snps, insertions then
+            # deletions
             mutations = vcf.tuples()
             CHROM, POS, REF, ALT, GT = mutations.__next__()
             del_l = del_r = 0
@@ -368,7 +383,7 @@ cdef class DipSeq:
 
                 c = origseq[allele][opos[allele]]
                 r = origrel[allele][opos[allele]]
-                
+
                 # in deletion
                 if (del_l <= r <= del_r):
                     if r == POS:
@@ -376,47 +391,50 @@ cdef class DipSeq:
                         # deletions with the exception that the reference base
                         # of an indel may be the last base of previous deletion
                         if not (len(REF) != len(ALT) and POS == del_r):
-                            raise Exception(EXCEPT_MUT % 
-                                            {'POS':POS, 'OLDPOS':OLDPOS})
+                            raise Exception(EXCEPT_MUT %
+                                            {'POS': POS, 'OLDPOS': OLDPOS})
                     else:
                         opos[allele] += 1
                         continue
 
                 # process any mutation at this location
                 if CHROM == seqid and POS == r:
-                    if GT == '1|0':                    # het (1|0)
+                    if GT == '1|0':                      # het (1|0)
                         gt = 1
-                    elif GT == '0|1':                  # het (0|1)
+                    elif GT == '0|1':                    # het (0|1)
                         gt = 2
-                    elif GT == '1|1':                  # hom
+                    elif GT == '1|1':                    # hom
                         gt = 3
                     else:
-                        raise Exception(MSG_UNKGT % (seqid, opos[allele], REF, ALT, GT))
+                        raise Exception(
+                            MSG_UNKGT %
+                            (seqid, opos[allele], REF, ALT, GT))
 
                     refsz, altsz = len(REF), len(ALT)
-                    if refsz == altsz == 1:            # snp  
+                    if refsz == altsz == 1:              # snp
                         snp = nst_nt4_table[ord(ALT[0])]
-                        if gt == 3 or gt == allele + 1:# hit allele
+                        if gt == 3 or gt == allele + 1:  # hit allele
                             update(allele, mutseq, snp, mutrel, r, mpos, mstop)
-                        else:                         
+                        else:
                             update(allele, mutseq, c, mutrel, r, mpos, mstop)
 
-                    elif altsz > refsz and refsz == 1: # insertion 
-                        if ((del_l <= r <= del_r) or POS == OLDPOS): 
+                    elif altsz > refsz and refsz == 1:   # insertion
+                        if ((del_l <= r <= del_r) or POS == OLDPOS):
                             # continued deletion or collocated snp
                             ALT = ALT[1:]
-                        if gt == 3 or gt == allele + 1:# hit allele
+                        if gt == 3 or gt == allele + 1:  # hit allele
                             for alt in ALT:
                                 ins = nst_nt4_table[ord(alt)]
-                                update(allele, mutseq, ins, mutrel, r, mpos, mstop)
-                        elif not ((del_l <= r <= del_r) or POS == OLDPOS):    
-                                update(allele, mutseq, c, mutrel, r, mpos, mstop)
+                                update(
+                                    allele, mutseq, ins, mutrel, r, mpos, mstop)
+                        elif not ((del_l <= r <= del_r) or POS == OLDPOS):
+                            update(allele, mutseq, c, mutrel, r, mpos, mstop)
 
-                    elif altsz < refsz and altsz == 1: # deletion
+                    elif altsz < refsz and altsz == 1:   # deletion
                         if not ((del_l <= r <= del_r) or POS == OLDPOS):
                             # no continued deletion or collocated snp/insertion
                             update(allele, mutseq, c, mutrel, r, mpos, mstop)
-                        if gt == 3 or gt == allele + 1:# hit allele
+                        if gt == 3 or gt == allele + 1:  # hit allele
                             del_l = POS + 1
                             del_r = POS + len(REF) - 1
 
@@ -433,55 +451,58 @@ cdef class DipSeq:
                     opos[allele] += 1
 
                 # get another mutation if new location is past current POS
-                while CHROM == seqid and origrel[allele][opos[allele]] > POS and POS > 0:
-                    sys.stderr.write(MSG_SKIP_MUT % 
-                                     {'allele':allele,'POS':POS})
+                while CHROM == seqid and origrel[allele][
+                        opos[allele]] > POS and POS > 0:
+                    sys.stderr.write(MSG_SKIP_MUT %
+                                     {'allele': allele, 'POS': POS})
                     CHROM, POS, REF, ALT, GT = mutations.__next__()
-                        
+
         self.stopA = mpos[0]
         self.stopB = mpos[1]
-                
+
     def write(self, dest):
         '''
         Output sequences from a DipSeq instance.
         Only the last digit of the reference-relative coordinate is shown.
 
-        @param dest: file or stream or anything with write and flush. 
+        @param dest: file or stream or anything with write and flush.
         '''
-        cdef int i, startln, allele, j, fold=self.fold
+        cdef int i, startln, allele, j, fold = self.fold
         cdef uint8_t *seq[2]
         cdef uint32_t *rel[2], stop[2]
-        
+
         self.get_ptrs(seq, rel)
         self.get_stop(stop)
-        
+
         for allele in range(2):
             startln = 0
-            dest.write('>%s.%s %s\n'% (self.seqid, allele, self.description))
+            dest.write('>%s.%s %s\n' % (self.seqid, allele, self.description))
             for i in range(stop[allele]):
                 dest.write("ACGTN"[seq[allele][i]])
                 if i and not (rel[allele][i]) % fold:
                     dest.write('\n')
-                    for j in range(startln, i+1):
+                    for j in range(startln, i + 1):
                         dest.write(str(rel[allele][j] % 10))
                     dest.write('\n')
-                    startln = i+1
+                    startln = i + 1
         dest.flush()
-        
 
-cdef inline int update(int allele, 
-                       uint8_t *seq[2], 
+
+cdef inline int update(int allele,
+                       uint8_t *seq[2],
                        uint8_t seqval,
-                       uint32_t *rel[2], 
-                       uint32_t relval, 
-                       uint32_t *pos, 
+                       uint32_t *rel[2],
+                       uint32_t relval,
+                       uint32_t *pos,
                        uint32_t *stop) nogil:
     '''
     Helper to update DipSeq sequences and position marker.
     '''
     if pos[allele] >= stop[allele]:
-        fprintf(stderr, "Array bounds exceeded. Insertions too large/too many? "
-                        "Try smaller values of -X, -r, and/or -R")
+        fprintf(
+            stderr,
+            "Array bounds exceeded. Insertions too large/too many? "
+            "Try smaller values of -X, -r, and/or -R")
         return 1
     seq[allele][pos[allele]] = seqval
     rel[allele][pos[allele]] = relval
@@ -489,17 +510,17 @@ cdef inline int update(int allele,
     return 0
 
 
-cdef insertion(uint8_t first, 
-               double indel_extend, 
+cdef insertion(uint8_t first,
+               double indel_extend,
                int max_insertion):
     '''
     Build and return list of randomly inserted characters as bytes in vcf 'ALT'
-    format i.e. with first character as reference base. If WGSIM_MODE is set, 
-    the generated insertion will be reversed with respect to generation order. 
+    format i.e. with first character as reference base. If WGSIM_MODE is set,
+    the generated insertion will be reversed with respect to generation order.
     '''
-    cdef int num_ins=0
+    cdef int num_ins = 0
     cdef list ins
-    ins = [] if WGSIM_MODE else [first,]
+    ins = [] if WGSIM_MODE else [first, ]
     while True:
         num_ins += 1
         ins.append(<uint8_t>(drand48() * 4.0))
@@ -507,7 +528,7 @@ cdef insertion(uint8_t first,
             if WGSIM_MODE:
                 # reverse for consistency with bitshift method
                 ins.append(first)
-                return ins[::-1] 
+                return ins[::-1]
             else:
                 return ins
 
@@ -516,19 +537,19 @@ def read_fasta(filename):
     '''
     Read from file, yield FASTA sequences.
     '''
-    cdef str seqid='', description = ''
+    cdef str seqid = '', description = ''
     cdef object seqb = bytearray()
-    cdef int fold=80
+    cdef int fold = 80
     cdef bool firstseq = True
     cdef bool firstseqline = True
 
     with open(filename, 'rb') as fh:
 
         for line in fh:
-            l = line[:-1] # strip newline 
-            if l == b'': # blank line
+            l = line[:-1]           # strip newline
+            if l == b'':            # blank line
                 continue
-            elif l[0] in (59, 62): # ';', '>'
+            elif l[0] in (59, 62):  # ';', '>'
                 f = DipSeq(seqid, description, seqb, fold=fold)
                 tkns = l.decode('ASCII').lstrip('>').split(' ', 1)
                 seqid = tkns[0] if len(tkns) >= 1 else ''
@@ -548,7 +569,7 @@ def read_fasta(filename):
         yield(DipSeq(seqid, description, seqb, fold=fold))
 
 
-def gen_quals(str filename, int readlen, int num_quals, char[:,:] qvals, double[:,:] pvals):
+def gen_quals(str filename, int readlen, int num_quals, char[:, :] qvals, double[:, :] pvals):
     '''
     Generate quality values from a file
     '''
@@ -568,9 +589,9 @@ def gen_quals(str filename, int readlen, int num_quals, char[:,:] qvals, double[
     tallies = []
     for c in cycles:
         cyclenum = int(c.get('value'))
-        ctallies = sorted( 
-            (cyclenum, int(t.get('value')), int(t.get('count'))) 
-                                            for t in c.findall('TallyItem') )
+        ctallies = sorted(
+            (cyclenum, int(t.get('value')), int(t.get('count')))
+            for t in c.findall('TallyItem'))
         tallies.extend(ctallies)
 
     cumdist = {}
@@ -578,20 +599,20 @@ def gen_quals(str filename, int readlen, int num_quals, char[:,:] qvals, double[
         cumdist.setdefault(cycle, [])
         prev = cumdist[cycle][-1][1] if len(cumdist[cycle]) else 0
         new = prev + count
-        cumdist[cycle].append( (qual, new) )
+        cumdist[cycle].append((qual, new))
 
     for i in range(num_quals):
         for j in range(readlen):
-            qvals[i,j] = _randqual(cumdist, j+1)
-            pvals[i,j] = 10 ** (qvals[i,j]/-10.0) # Phred definition
+            qvals[i, j] = _randqual(cumdist, j + 1)
+            pvals[i, j] = 10 ** (qvals[i, j] / -10.0)  # Phred definition
 
-    
+
 cdef inline int _randqual(dict dist, int cycle):
     '''
     Return a random, representative quality value for a cycle given a dict of
     lists of tuples representing cumulative distribution function of qualities
-    per cycle:{ <cycle1>: [(<qual1>, <cumulative count1>), 
-                           (<qual2>, <cumulative count2>), 
+    per cycle:{ <cycle1>: [(<qual1>, <cumulative count1>),
+                           (<qual2>, <cumulative count2>),
                            ...],
     '''
     cdef long maxcount, count, rand
@@ -601,7 +622,8 @@ cdef inline int _randqual(dict dist, int cycle):
     for qual, count in dist[cycle]:
         if count > rand:
             return qual
-    return 0 
+    return 0
+
 
 def _t_randqual(dist, cycle):
     '''
@@ -609,17 +631,20 @@ def _t_randqual(dist, cycle):
     '''
     return _randqual(dist, cycle)
 
+
 def reseed(seed):
     '''
     Hook for (re)seeding the random number generator
     '''
-    srand48(seed) 
+    srand48(seed)
+
 
 def get_args():
     '''
     Return options and arguments
     '''
     class Range(object):
+
         def __init__(self, start, end):
             self.start = start
             self.end = end
@@ -642,6 +667,7 @@ def get_args():
     mutgrp.add_argument('-X', '--indel-extend', help='probability an indel is extended', type=float, default=0.3, choices=[Range(0.0,1.0)])
     mutgrp.add_argument('-M', '--max-insertion', help='Maximum size of generated insertions (regardless of -X value)', type=int, default=1000)
     mutgrp.add_argument('-n', '--sample-name', help='name of sample for vcf output', type=str, default='SAMPLE')
+
     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)
     mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt')) 
     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)
@@ -655,6 +681,7 @@ def get_args():
     mutgrp2.add_argument('--max-insertion2', help='Maximum size of generated somatic insertions (regardless of -X value)', type=int, default=1000)
     mutgrp2.add_argument('--contamination', help='fraction of reads generated from "germline" sequence', type=float, default=0.0, choices=[Range(0.0,1.0)])
     mutgrp2.add_argument('--sample-name2', help='name of sample for vcf2 output', type=str, default='SOMATIC')
+
     mutgrp2io = mutgrp2.add_mutually_exclusive_group()
     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt')) 
     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
@@ -668,10 +695,11 @@ def get_args():
     rdsgrp.add_argument('-1', '--length1', help='length of read 1', type=int, default=100)
     rdsgrp.add_argument('-2', '--length2', help='length of read 2', type=int, default=100)
     rdsgrp.add_argument('-A', '--ambig-frac', help='discard read if fraction of "N" bases exceeds this', type=float, default=0.05, choices=[Range(0.0,1.0)])
+
     rdsgrperr = rdsgrp.add_mutually_exclusive_group()
     rdsgrperr.add_argument('-e', '--error-rate', help='read error rate (constant)', type=float, default=0.002, choices=[Range(0.0,1.0)])
     rdsgrperr.add_argument('-Q', '--quals-from', help='generate random quality strings from the distribution specified in file', type=str)
-    rdsgrp.add_argument('--num-quals', help='number of quality strings to generate from distribution file', type=int, default=1000)
+    rdsgrperr.add_argument('--num-quals', help='number of quality strings to generate from distribution file', type=int, default=1000)
 
     othgrp = p.add_argument_group('Other')
     othgrp.add_argument('-d', '--seed', help='seed for random generator (default=current time)', type=int, default=datetime.now().strftime('%s'))
@@ -688,10 +716,12 @@ def get_args():
     del args.wgsim_mode
 
     if args.somatic_mode and not args.vcf_input2 and not args.output2:
-        p.error('one of --output2 or --vcf-input2 is required when specifying somatic mode')
+        p.error(
+            'one of --output2 or --vcf-input2 is required when specifying somatic mode')
 
     if args.quals_from and args.length1 != args.length2:
-        p.error('read 1 and 2 lengths must be the same when specifying -Q, --quals-from')
+        p.error(
+            'read 1 and 2 lengths must be the same when specifying -Q, --quals-from')
 
     return args
 
@@ -704,57 +734,63 @@ def qasim_cli():
     args = get_args()
 
     # variables from command line args
-    cdef str fasta=args.fasta, quals_from=args.quals_from, \
-             sample_name=args.sample_name, sample_name2=args.sample_name2, \
-             vcf_input=args.vcf_input, vcf_input2=args.vcf_input2
-    cdef object read1fq=args.read1fq, read2fq=args.read2fq, \
-             output=args.output, output2=args.output2, 
-    cdef int max_insertion=args.max_insertion, size=args.size, \
-             std_dev=args.std_dev, num_pairs=args.num_pairs, \
-             length1=args.length1, length2=args.length2, \
-             num_quals=args.num_quals, seed=args.seed, \
-             max_insertion2=args.max_insertion2
-    cdef double mut_rate=args.mut_rate, homo_frac=args.homo_frac, \
-             indel_frac=args.indel_frac, indel_extend=args.indel_extend, \
-             mut_rate2=args.mut_rate2, homo_frac2=args.homo_frac2, \
-             indel_frac2=args.indel_frac2, indel_extend2=args.indel_extend2, \
-             contamination=args.contamination, error_rate=args.error_rate, \
-             ambig_frac=args.ambig_frac
-    cdef bool somatic_mode=args.somatic_mode, test_output=args.test_output
+    cdef str fasta = args.fasta, quals_from = args.quals_from, \
+        sample_name = args.sample_name, sample_name2 = args.sample_name2, \
+        vcf_input = args.vcf_input, vcf_input2 = args.vcf_input2
+    cdef object read1fq = args.read1fq, read2fq = args.read2fq, \
+        output = args.output, output2 = args.output2,
+    cdef int max_insertion = args.max_insertion, size = args.size, \
+        std_dev = args.std_dev, num_pairs = args.num_pairs, \
+        length1 = args.length1, length2 = args.length2, \
+        num_quals = args.num_quals, seed = args.seed, \
+        max_insertion2 = args.max_insertion2
+    cdef double mut_rate = args.mut_rate, homo_frac = args.homo_frac, \
+        indel_frac = args.indel_frac, indel_extend = args.indel_extend, \
+        mut_rate2 = args.mut_rate2, homo_frac2 = args.homo_frac2, \
+        indel_frac2 = args.indel_frac2, indel_extend2 = args.indel_extend2, \
+        contamination = args.contamination, error_rate = args.error_rate, \
+        ambig_frac = args.ambig_frac
+    cdef bool somatic_mode = args.somatic_mode, test_output = args.test_output
 
-    cdef uint64_t tot_len=0, n_pairs, n_som, n_grm
-    cdef int n_ref=0, i, mutseqsize, mutseq2size
+    cdef uint64_t tot_len = 0, n_pairs, n_som, n_grm
+    cdef int n_ref = 0, i, mutseqsize, mutseq2size
     cdef VCF vcf, vcf2
     cdef DipSeq refseq, mutseq, mutseq2
     cdef FILE *fpout1, *fpout2
-    cdef uint8_t[:,:] qvals
-    cdef double[:,:] pvals
-    cdef char **q=NULL
-    cdef double **p=NULL
+    cdef uint8_t[:, :] qvals
+    cdef double[:, :] pvals
+    cdef char **q = NULL
+    cdef double **p = NULL
 
     sys.stderr.write("[%s] seed = %i\n" % (__name__, seed))
-    reseed(seed) 
+    reseed(seed)
 
     fpout1 = fdopen(read1fq.fileno(), 'wb')
     fpout2 = fdopen(read2fq.fileno(), 'wb')
 
     if vcf_input:
-        sys.stderr.write("[%s] reading mutations from file %s (1)\n" % (__name__, vcf_input))
+        sys.stderr.write(
+            "[%s] reading mutations from file %s (1)\n" %
+            (__name__, vcf_input))
         vcf = VCF.fromfile(vcf_input, sample_name)
     else:
         vcf = VCF(sample_name)
 
     if somatic_mode:
         if vcf_input2:
-            sys.stderr.write("[%s] reading mutations from file %s (2)\n" % (__name__, vcf_input2))
+            sys.stderr.write(
+                "[%s] reading mutations from file %s (2)\n" %
+                (__name__, vcf_input2))
             vcf2 = VCF.fromfile(vcf_input2, sample_name2)
-        else: 
+        else:
             vcf2 = VCF(sample_name2)
 
     if quals_from:
-        qvals = np.ndarray((num_quals, length1), dtype='u1') 
+        qvals = np.ndarray((num_quals, length1), dtype='u1')
         pvals = np.ndarray((num_quals, length1))
-        sys.stderr.write("[%s] generating qualities from %s\n" % (__name__, quals_from))
+        sys.stderr.write(
+            "[%s] generating qualities from %s\n" %
+            (__name__, quals_from))
         gen_quals(quals_from, length1, num_quals, qvals, pvals)
         q = <char**>calloc(num_quals, sizeof(char*))
         p = <double**>calloc(num_quals, sizeof(double*))
@@ -766,9 +802,9 @@ def qasim_cli():
         num_quals = 0
 
     for refseq in read_fasta(fasta):
-        n_ref +=1
+        n_ref += 1
         tot_len += refseq.stopA
-    sys.stderr.write("[%s] %d input sequences, total length: %i\n" % 
+    sys.stderr.write("[%s] %d input sequences, total length: %i\n" %
                      (__name__, n_ref, tot_len))
 
     # iterate through input sequences
@@ -778,24 +814,25 @@ def qasim_cli():
         n_som = <uint64_t>ceil(n_pairs * (1 - contamination))
 
         if refseq.stopA < size + 3 * std_dev:
-            sys.stderr.write("[%s] skip sequence '%s' as it is shorter than %d\n"
-                 % (__name__, refseq.seqid, size + 3 * std_dev))
+            sys.stderr.write(
+                "[%s] skip sequence '%s' as it is shorter than %d\n" %
+                (__name__, refseq.seqid, size + 3 * std_dev))
             continue
 
         # this size is a bit arbitrary, but seems to cope with most cases
         mutseqsize = <int>(1.1 * refseq.seqA.shape[0] + 10 * max_insertion)
-        mutseq = DipSeq(refseq.seqid + '.1', 
-                        refseq.description + '.1', 
+        mutseq = DipSeq(refseq.seqid + '.1',
+                        refseq.description + '.1',
                         size=mutseqsize,
                         fold=refseq.fold)
 
         if not vcf_input:
             sys.stderr.write("[%s] generating mutations (1)\n" % (__name__,))
             DipSeq.mutagen(refseq,
-                           vcf, 
-                           mut_rate, 
-                           homo_frac, 
-                           indel_frac, 
+                           vcf,
+                           mut_rate,
+                           homo_frac,
+                           indel_frac,
                            indel_extend,
                            max_insertion)
         mutseq.transform(refseq, vcf)
@@ -804,25 +841,27 @@ def qasim_cli():
 
         # sample "germline" sequence
         bseqid = bytes(mutseq.seqid, 'ASCII')
-        sys.stderr.write("[%s] generating %i reads from sequence %s\n" % 
-                     (__name__, n_grm, mutseq.seqid))
+        sys.stderr.write("[%s] generating %i reads from sequence %s\n" %
+                         (__name__, n_grm, mutseq.seqid))
         if n_grm:
-            # reseed(seed) # reseed during testing 
+            # reseed(seed) # reseed during testing
             genreads(fpout1, fpout2, &(mutseq.seqA[0]), &(mutseq.seqB[0]),
-                     &(mutseq.relA[0]), &(mutseq.relB[0]), 
+                     &(mutseq.relA[0]), &(mutseq.relB[0]),
                      mutseq.stopA, mutseq.stopB,
-                     n_grm, size, std_dev, length1, length2, 
+                     n_grm, size, std_dev, length1, length2,
                      error_rate, ambig_frac, bseqid, num_quals, p, q)
 
         if somatic_mode:
             mutseq2size = <int>(1.1 * mutseq.seqA.shape[0] + 10 * max_insertion2)
-            mutseq2 = DipSeq(refseq.seqid + '.2', 
+            mutseq2 = DipSeq(refseq.seqid + '.2',
                              refseq.description + '.2',
                              size=mutseq2size,
                              fold=refseq.fold)
 
             if not vcf_input2:
-                sys.stderr.write("[%s] generating mutations (2)\n" % (__name__,))
+                sys.stderr.write(
+                    "[%s] generating mutations (2)\n" %
+                    (__name__,))
                 DipSeq.mutagen(refseq,
                                vcf2,
                                mut_rate2,
@@ -837,14 +876,14 @@ def qasim_cli():
 
             # sample somatic sequence
             bseqid = bytes(mutseq2.seqid, 'ASCII')
-            sys.stderr.write("[%s] generating %i reads from sequence %s\n" % 
-                         (__name__, n_som, mutseq2.seqid))
+            sys.stderr.write("[%s] generating %i reads from sequence %s\n" %
+                             (__name__, n_som, mutseq2.seqid))
             if n_som:
-                # reseed(seed) # reseed during testing 
+                # reseed(seed) # reseed during testing
                 genreads(fpout1, fpout2, &(mutseq2.seqA[0]), &(mutseq2.seqB[0]),
-                         &(mutseq2.relA[0]), &(mutseq2.relB[0]), 
+                         &(mutseq2.relA[0]), &(mutseq2.relB[0]),
                          mutseq2.stopA, mutseq2.stopB,
-                         n_som, size, std_dev, length1, length2, 
+                         n_som, size, std_dev, length1, length2,
                          error_rate, ambig_frac, bseqid, num_quals, p, q)
 
     if not vcf_input:
@@ -859,7 +898,7 @@ def qasim_cli():
 
     read1fq.close()
     read2fq.close()
-    
+
     free(p)
     free(q)
 

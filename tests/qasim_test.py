@@ -10,7 +10,7 @@ from os.path import dirname
 from xml.etree import ElementTree as ET
 
 from qasim.qasim import EXCEPT_MUT, MSG_SKIP_MUT, MSG_CTOR_SEQ_OR_SIZE, \
-        VCF, DipSeq, read_fasta, gen_quals, _t_randqual, reseed
+    VCF, DipSeq, read_fasta, gen_quals, _t_randqual, reseed
 
 # test resources are located in the current dir
 test0fa = path_join(dirname(__file__), 'resources/test0.fa')
@@ -182,24 +182,24 @@ class TestDipSeq(unittest.TestCase):
         mutseq.transform(refseq, vcf)
         insertion_1 = range(4, 7)
         self.assertEqual(
-            ''.join(base(mutseq.seqA[POS-1]) for POS in insertion_1), "AGG")
+            ''.join(base(mutseq.seqA[POS - 1]) for POS in insertion_1), "AGG")
         self.assertEqual(
-            list(mutseq.relA[POS-1] for POS in insertion_1), [4, 4, 4])
+            list(mutseq.relA[POS - 1] for POS in insertion_1), [4, 4, 4])
         insertion_2 = range(5, 9)
         self.assertEqual(
-            ''.join(base(mutseq.seqB[POS-1]) for POS in insertion_2), "CTTT")
+            ''.join(base(mutseq.seqB[POS - 1]) for POS in insertion_2), "CTTT")
         self.assertEqual(
-            list(mutseq.relB[POS-1] for POS in insertion_2), [5, 5, 5, 5])
+            list(mutseq.relB[POS - 1] for POS in insertion_2), [5, 5, 5, 5])
         deletion_1A = range(15, 17)
         deletion_1B = range(16, 18)
         self.assertEqual(
-            ''.join(base(mutseq.seqA[POS-1]) for POS in deletion_1A), "CC")
+            ''.join(base(mutseq.seqA[POS - 1]) for POS in deletion_1A), "CC")
         self.assertEqual(
-            list(mutseq.relA[POS-1] for POS in deletion_1A), [13, 16])
+            list(mutseq.relA[POS - 1] for POS in deletion_1A), [13, 16])
         self.assertEqual(
-            ''.join(base(mutseq.seqB[POS-1]) for POS in deletion_1B), "CC")
+            ''.join(base(mutseq.seqB[POS - 1]) for POS in deletion_1B), "CC")
         self.assertEqual(
-            list(mutseq.relB[POS-1] for POS in deletion_1B), [13, 16])
+            list(mutseq.relB[POS - 1] for POS in deletion_1B), [13, 16])
 
     def test_transform_2(self):
         """complex overlapping mutations"""
@@ -317,7 +317,7 @@ class TestQasim(unittest.TestCase):
             """counts = [(qual, cumulative_count), ...]"""
             return sum(
                 counts[i][0] *
-                (counts[i][1] - (0 if i == 0 else counts[i-1][1]))
+                (counts[i][1] - (0 if i == 0 else counts[i - 1][1]))
                 for i in range(len(counts))) / float(counts[-1][1])
 
         mu_1 = avg(dist[1])  # = 22.625
@@ -329,10 +329,10 @@ class TestQasim(unittest.TestCase):
         mean_2 = sum(_t_randqual(dist, 2) for i in range(N)) / float(N)
         mean_3 = sum(_t_randqual(dist, 3) for i in range(N)) / float(N)
         mean_4 = sum(_t_randqual(dist, 4) for i in range(N)) / float(N)
-        self.assertAlmostEqual(mean_1/mu_1, 1.0, delta=0.01)
-        self.assertAlmostEqual(mean_2/mu_2, 1.0, delta=0.01)
-        self.assertAlmostEqual(mean_3/mu_3, 1.0, delta=0.01)
-        self.assertAlmostEqual(mean_4/mu_4, 1.0, delta=0.01)
+        self.assertAlmostEqual(mean_1 / mu_1, 1.0, delta=0.01)
+        self.assertAlmostEqual(mean_2 / mu_2, 1.0, delta=0.01)
+        self.assertAlmostEqual(mean_3 / mu_3, 1.0, delta=0.01)
+        self.assertAlmostEqual(mean_4 / mu_4, 1.0, delta=0.01)
 
     def test_gen_quals(self):
         """check that P values match Q scores, and sample is representative"""
@@ -344,20 +344,20 @@ class TestQasim(unittest.TestCase):
 
         for sample in range(num_quals):
             for q, p in zip(qvals[sample], pvals[sample]):
-                self.assertEqual(p, 10 ** (q/-10))
+                self.assertEqual(p, 10 ** (q / -10))
 
         doc = ET.parse(testqpxml)
         Q = doc.getroot().find('.//QUAL')
-        for cyclenum in range(1, read_length+1):
+        for cyclenum in range(1, read_length + 1):
             cycle = Q.find(".//Cycle[@value='%s']" % cyclenum)
             weights = sum(int(t.get('value')) * int(t.get('count'))
                           for t in cycle.findall('TallyItem'))
             counts = sum(int(t.get('count'))
                          for t in cycle.findall('TallyItem'))
             mu_qual = weights / float(counts)               # population mean
-            samples = qvals[:, cyclenum-1]
+            samples = qvals[:, cyclenum - 1]
             mean_qual = sum(samples) / float(len(samples))  # sample mean
-            self.assertAlmostEqual(mean_qual/mu_qual, 1.0, delta=0.01)
+            self.assertAlmostEqual(mean_qual / mu_qual, 1.0, delta=0.01)
 
 
 if __name__ == '__main__':
