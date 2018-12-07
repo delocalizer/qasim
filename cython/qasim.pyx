@@ -151,7 +151,7 @@ cdef class VCF:
             
     def write(self, dest):
         '''
-        Output to dest: file or stream or anything with write method.
+        @param dest: file or stream or anything with write and flush.
         '''
         cdef dict r
         dest.write(self.header)
@@ -441,31 +441,32 @@ cdef class DipSeq:
         self.stopA = mpos[0]
         self.stopB = mpos[1]
                 
-    def print_seq(self):
+    def write(self, dest):
         '''
         Output sequences from a DipSeq instance.
         Only the last digit of the reference-relative coordinate is shown.
+
+        @param dest: file or stream or anything with write and flush. 
         '''
         cdef int i, startln, allele, j, fold=self.fold
         cdef uint8_t *seq[2]
         cdef uint32_t *rel[2], stop[2]
-        cdef object stdout=sys.stdout.write
         
         self.get_ptrs(seq, rel)
         self.get_stop(stop)
         
         for allele in range(2):
             startln = 0
-            stdout('>%s.%s %s\n'% (self.seqid, allele, self.description))
+            dest.write('>%s.%s %s\n'% (self.seqid, allele, self.description))
             for i in range(stop[allele]):
-                stdout("ACGTN"[seq[allele][i]])
+                dest.write("ACGTN"[seq[allele][i]])
                 if i and not (rel[allele][i]) % fold:
-                    stdout('\n')
+                    dest.write('\n')
                     for j in range(startln, i+1):
-                        stdout(str(rel[allele][j] % 10))
-                    stdout('\n')
+                        dest.write(str(rel[allele][j] % 10))
+                    dest.write('\n')
                     startln = i+1
-        sys.stdout.flush()
+        dest.flush()
         
 
 cdef inline int update(int allele, 
@@ -799,7 +800,7 @@ def qasim_cli():
                            max_insertion)
         mutseq.transform(refseq, vcf)
         if test_output:
-            mutseq.print_seq()
+            mutseq.write(sys.stdout)
 
         # sample "germline" sequence
         bseqid = bytes(mutseq.seqid, 'ASCII')
@@ -832,7 +833,7 @@ def qasim_cli():
                                True)
             mutseq2.transform(mutseq, vcf2)
             if test_output:
-                mutseq2.print_seq()
+                mutseq2.write(sys.stdout)
 
             # sample somatic sequence
             bseqid = bytes(mutseq2.seqid, 'ASCII')

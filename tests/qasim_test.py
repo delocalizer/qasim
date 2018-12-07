@@ -15,14 +15,17 @@ from qasim.qasim import _t_randqual
 
 
 # test resources are located in the current dir
-testfasta = path_join(dirname(__file__), 'test.fa')
-test0vcf = path_join(dirname(__file__), 'test0.vcf')
-test1vcf = path_join(dirname(__file__), 'test1.vcf')
-test2vcf = path_join(dirname(__file__), 'test2.vcf')
-test3grmvcf = path_join(dirname(__file__), 'test3.1.vcf')
-test3somvcf = path_join(dirname(__file__), 'test3.2.vcf')
-test4vcf = path_join(dirname(__file__), 'test4.vcf')
-testqpxml = path_join(dirname(__file__), 'test.qp.xml')
+test0fa = path_join(dirname(__file__), 'resources/test0.fa')
+test1fa = path_join(dirname(__file__), 'resources/test1.fa')
+test0vcf = path_join(dirname(__file__), 'resources/test0.vcf')
+test1vcf = path_join(dirname(__file__), 'resources/test1.vcf')
+test2vcf = path_join(dirname(__file__), 'resources/test2.vcf')
+test3grmvcf = path_join(dirname(__file__), 'resources/test3.1.vcf')
+test3somvcf = path_join(dirname(__file__), 'resources/test3.2.vcf')
+test4vcf = path_join(dirname(__file__), 'resources/test4.vcf')
+testqpxml = path_join(dirname(__file__), 'resources/test.qp.xml')
+mut_seq = path_join(dirname(__file__), 'resources/mutagen_result.sequence')
+mut_vcf = path_join(dirname(__file__), 'resources/mutagen_result.vcf')
 
 
 @contextmanager
@@ -100,22 +103,54 @@ class TestDipSeq(unittest.TestCase):
         with self.assertRaisesRegex(Exception, MSG_CTOR_SEQ_OR_SIZE):
             d = DipSeq("T", "TEST", bytearray([65]), 1)
 
-    def test_print_seq(self):
+    def test_write(self):
         d = DipSeq("T", "TEST", hapseq=bytearray([65, 67, 71, 84, 78]))
-        with captured_output() as (out, err):
-            d.print_seq()
-            self.assertEqual(out.getvalue(), (
-                ">T.0 TEST\n"
-                "ACGTN\n"
-                "12345\n"
-                ">T.1 TEST\n"
-                "ACGTN\n"
-                "12345\n"))
+        out = StringIO()
+        d.write(out)
+        self.assertEqual(out.getvalue(), (
+            ">T.0 TEST\n"
+            "ACGTN\n"
+            "12345\n"
+            ">T.1 TEST\n"
+            "ACGTN\n"
+            "12345\n"))
+
+    def test_mutagen(self):
+        """tests both mutagen and transform methods"""
+        # Another case where we take a shortcut by simply asserting that the
+        # data in the test resource files are valid "by inspection" and
+        # require that the test run matches them every time. In this case
+        # cross-referencing the randomly generated mutations in the vcf with
+        # the transformed sequence file is what's required. You should take
+        # a look — it's interesting!
+        refseq = next(read_fasta(test1fa))
+        vcf = VCF("sample1")
+        mut_rate = 0.01
+        homo_frac = 0.333333
+        indel_frac = 0.15
+        indel_extend = 0.3
+        max_insertion = 1000
+        reseed(12345678) # deterministic iff we set the seed
+        DipSeq.mutagen(refseq, vcf, mut_rate, homo_frac, indel_frac,
+                indel_extend, max_insertion)
+        out = StringIO()
+        vcf.write(out)
+        with open(mut_vcf) as fh:
+            self.assertEqual(out.getvalue(), ''.join(fh.readlines()))
+        mutseq = DipSeq(refseq.seqid + '.mut',
+                refseq.description,
+                size = refseq.seqA.shape[0] * 2,
+                fold = refseq.fold)
+        mutseq.transform(refseq, vcf)
+        out = StringIO()
+        mutseq.write(out)
+        with open(mut_seq) as fh:
+            self.assertEqual(out.getvalue(), ''.join(fh.readlines()))
 
     def test_transform_0(self):
         """germline het & hom snps"""
         vcf = VCF.fromfile(test0vcf, "sample1")
-        refseq = next(read_fasta(testfasta))
+        refseq = next(read_fasta(test0fa))
         mutseq = DipSeq(refseq.seqid + '.mut',
                 refseq.description,
                 size = refseq.seqA.shape[0] * 2,
@@ -140,7 +175,7 @@ class TestDipSeq(unittest.TestCase):
     def test_transform_1(self):
         """simple het & hom indels"""
         vcf = VCF.fromfile(test1vcf, "sample1")
-        refseq = next(read_fasta(testfasta))
+        refseq = next(read_fasta(test0fa))
         mutseq = DipSeq(refseq.seqid + '.mut',
                 refseq.description,
                 size = refseq.seqA.shape[0] * 2,
@@ -162,45 +197,45 @@ class TestDipSeq(unittest.TestCase):
     def test_transform_2(self):
         """complex overlapping mutations"""
         vcf = VCF.fromfile(test2vcf, "sample1")
-        refseq = next(read_fasta(testfasta))
+        refseq = next(read_fasta(test0fa))
         mutseq = DipSeq(refseq.seqid + '.mut',
                 refseq.description,
                 size = refseq.seqA.shape[0] * 2,
                 fold = refseq.fold)
         mutseq.transform(refseq, vcf)
-        with captured_output() as (out, err):
-            mutseq.print_seq()
-            # we take a bit of a shorcut and rather than testing all the
-            # explicit logic of the transformation we just test equality to
-            # this output that we assert is valid "by inspection".
-            self.assertEqual(out.getvalue(), (
-                ">TEST.mut.0 small fasta for testing\n"
-                "AAAAGGCCGAAACCCC\n"
-                "1234445690123456\n"
-                ">TEST.mut.1 small fasta for testing\n"
-                "AAAAGGCTTTCAAAACCCC\n"
-                "1234445555690123456\n"))
+        out = StringIO()
+        mutseq.write(out)
+        # we take a bit of a shorcut and rather than testing all the
+        # explicit logic of the transformation we just test equality to
+        # this output that we assert is valid "by inspection".
+        self.assertEqual(out.getvalue(), (
+            ">TEST.mut.0 small fasta for testing\n"
+            "AAAAGGCCGAAACCCC\n"
+            "1234445690123456\n"
+            ">TEST.mut.1 small fasta for testing\n"
+            "AAAAGGCTTTCAAAACCCC\n"
+            "1234445555690123456\n"))
 
     def test_transform_3(self):
         """overlapping mutations in somatic mode"""
         grmvcf = VCF.fromfile(test3grmvcf)
         somvcf = VCF.fromfile(test3somvcf)
-        refseq = next(read_fasta(testfasta))
+        refseq = next(read_fasta(test0fa))
 
         grmseq = DipSeq(refseq.seqid + '.grm',
                 refseq.description,
                 size = refseq.seqA.shape[0] * 2,
                 fold = refseq.fold)
         grmseq.transform(refseq, grmvcf)
-        with captured_output() as (out, err):
-            grmseq.print_seq()
-            self.assertEqual(out.getvalue(), (
-                ">TEST.grm.0 small fasta for testing\n"
-                "AAAAGGCCCCAAAACCCC\n"
-                "123444567890123456\n"
-                ">TEST.grm.1 small fasta for testing\n"
-                "AAAAGGCCAAAACCCC\n"
-                "1234447890123456\n"))
+        out = StringIO()
+        grmseq.write(out)
+        self.assertEqual(out.getvalue(), (
+            ">TEST.grm.0 small fasta for testing\n"
+            "AAAAGGCCCCAAAACCCC\n"
+            "123444567890123456\n"
+            ">TEST.grm.1 small fasta for testing\n"
+            "AAAAGGCCAAAACCCC\n"
+            "1234447890123456\n"))
 
         somseq = DipSeq(refseq.seqid + '.som',
                 refseq.description,
@@ -210,21 +245,22 @@ class TestDipSeq(unittest.TestCase):
             expected_msg = MSG_SKIP_MUT % {'allele': 1, 'POS': 5}
             somseq.transform(grmseq, somvcf)
             self.assertEqual(err.getvalue(), expected_msg)
-            somseq.print_seq()
-            # somatic insertion at 4 and deletion at 5 both applied to allele 0
-            # somatic deletion at 5 isn't applied to allele 1
-            self.assertEqual(out.getvalue(), (
-                ">TEST.som.0 small fasta for testing\n"
-                "AAAATTGGCAAAACCCC\n"
-                "12344444590123456\n"
-                ">TEST.som.1 small fasta for testing\n"
-                "AAAATTGGCCAAAACCCC\n" 
-                "123444447890123456\n"))
+        out = StringIO()
+        somseq.write(out)
+        # somatic insertion at 4 and deletion at 5 both applied to allele 0
+        # somatic deletion at 5 isn't applied to allele 1
+        self.assertEqual(out.getvalue(), (
+            ">TEST.som.0 small fasta for testing\n"
+            "AAAATTGGCAAAACCCC\n"
+            "12344444590123456\n"
+            ">TEST.som.1 small fasta for testing\n"
+            "AAAATTGGCCAAAACCCC\n" 
+            "123444447890123456\n"))
 
     def test_transform_4(self):
         """disallow mutations overlapping deletions in same vcf"""
         vcf = VCF.fromfile(test4vcf, "sample1")
-        refseq = next(read_fasta(testfasta))
+        refseq = next(read_fasta(test0fa))
         mutseq = DipSeq(refseq.seqid + '.mut',
                 refseq.description,
                 size = refseq.seqA.shape[0] * 2,
@@ -237,16 +273,16 @@ class TestDipSeq(unittest.TestCase):
 class TestQasim(unittest.TestCase):
 
     def test_read_fasta(self):
-        with captured_output() as (out, err):
-            for seq in read_fasta(testfasta):
-                seq.print_seq()
-                self.assertEqual(out.getvalue(), (
-                    ">TEST.0 small fasta for testing\n"
-                    "AAAACCCCAAAACCCC\n"
-                    "1234567890123456\n"
-                    ">TEST.1 small fasta for testing\n"
-                    "AAAACCCCAAAACCCC\n"
-                    "1234567890123456\n"))
+        for seq in read_fasta(test0fa):
+            out = StringIO()
+            seq.write(out)
+            self.assertEqual(out.getvalue(), (
+                ">TEST.0 small fasta for testing\n"
+                "AAAACCCCAAAACCCC\n"
+                "1234567890123456\n"
+                ">TEST.1 small fasta for testing\n"
+                "AAAACCCCAAAACCCC\n"
+                "1234567890123456\n"))
 
     def test_randqual(self):
         """random choice from cumulative frequency distribution"""
@@ -265,26 +301,26 @@ class TestQasim(unittest.TestCase):
             4: [(2, 7000), (8, 8000), (12, 8000), (22, 8000), (27, 8000),
                 (32, 8000), (37, 8000), (41, 8000)]
         }
-        def popmean(counts):
+        def avg(counts):
             """counts = [(qual, cumulative_count), ...]"""
             return sum(
                 counts[i][0] *
                     (counts[i][1] - (0 if i == 0 else counts[i-1][1]))
                         for i in range(len(counts))) / float(counts[-1][1])
 
-        mu_1 = popmean(dist[1]) # = 22.625
-        mu_2 = popmean(dist[2]) # = 39
-        mu_3 = popmean(dist[3]) # = 40.5
-        mu_4 = popmean(dist[4]) # = 2.75
+        mu_1 = avg(dist[1]) # = 22.625
+        mu_2 = avg(dist[2]) # = 39
+        mu_3 = avg(dist[3]) # = 40.5
+        mu_4 = avg(dist[4]) # = 2.75
         N = 100000
-        mean_rand_1 = sum(_t_randqual(dist, 1) for i in range(N)) / float(N)
-        mean_rand_2 = sum(_t_randqual(dist, 2) for i in range(N)) / float(N)
-        mean_rand_3 = sum(_t_randqual(dist, 3) for i in range(N)) / float(N)
-        mean_rand_4 = sum(_t_randqual(dist, 4) for i in range(N)) / float(N)
-        self.assertAlmostEqual(mu_1, mean_rand_1, 1)
-        self.assertAlmostEqual(mu_2, mean_rand_2, 1)
-        self.assertAlmostEqual(mu_3, mean_rand_3, 1)
-        self.assertAlmostEqual(mu_4, mean_rand_4, 1)
+        mean_1 = sum(_t_randqual(dist, 1) for i in range(N)) / float(N)
+        mean_2 = sum(_t_randqual(dist, 2) for i in range(N)) / float(N)
+        mean_3 = sum(_t_randqual(dist, 3) for i in range(N)) / float(N)
+        mean_4 = sum(_t_randqual(dist, 4) for i in range(N)) / float(N)
+        self.assertAlmostEqual(mean_1/mu_1, 1.0, delta=0.01)
+        self.assertAlmostEqual(mean_2/mu_2, 1.0, delta=0.01)
+        self.assertAlmostEqual(mean_3/mu_3, 1.0, delta=0.01)
+        self.assertAlmostEqual(mean_4/mu_4, 1.0, delta=0.01)
 
     def test_gen_quals(self):
         """check that P values match Q scores, and sample is representative"""
