@@ -1,4 +1,4 @@
-import numpy as np
+"""Tests for qasim package"""
 import sys
 import tempfile
 import unittest
@@ -8,6 +8,8 @@ from io import StringIO
 from os.path import join as path_join
 from os.path import dirname
 from xml.etree import ElementTree as ET
+
+import numpy as np
 
 from qasim.qasim import EXCEPT_MUT, MSG_SKIP_MUT, MSG_CTOR_SEQ_OR_SIZE, \
     VCF, DipSeq, read_fasta, gen_quals, _t_randqual, reseed
@@ -48,16 +50,19 @@ def base(code):
 
 
 class TestVcf(unittest.TestCase):
+    """VCF class tests"""
 
     def setUp(self):
         self.test0vcf = VCF.fromfile(test0vcf)
 
     def test_ctor(self):
+        """Test the no-args constructor"""
         vcf = VCF()
         self.assertEqual(vcf.sample, "SAMPLE")
         self.assertEqual(len(vcf.records), 0)
 
     def test_tuples(self):
+        """Test the VCF.tuples() method"""
         CHROM, POS, REF, ALT, GT = next(self.test0vcf.tuples())
         self.assertEqual(CHROM, "TEST")
         self.assertEqual(POS, 5)
@@ -66,6 +71,7 @@ class TestVcf(unittest.TestCase):
         self.assertEqual(GT, "0|1")
 
     def test_write(self):
+        """Test the VCF.write() method"""
         with tempfile.TemporaryFile(mode='w+t') as fh:
             self.test0vcf.write(fh)
             fh.seek(0)
@@ -77,29 +83,35 @@ class TestVcf(unittest.TestCase):
                     for r in self.test0vcf.records) + '\n')
 
     def test_fromfile(self):
+        """Test the VCF.fromfile() method"""
         vcf = VCF.fromfile(test0vcf, "sample1")
         self.assertEqual(vcf.sample, "sample1")
         self.assertEqual(len(vcf.records), 3)
 
 
 class TestDipSeq(unittest.TestCase):
+    """DipSeq class tests"""
 
     def test_ctor_from_size(self):
+        """Test the constructor that takes size argument"""
         d = DipSeq("T", "TEST", size=6)
         self.assertEqual(d.stopA, 6)
         self.assertEqual(d.stopB, 6)
 
     def test_ctor_from_seq(self):
+        """Test the constructor that takes a sequence argument"""
         d = DipSeq("T", "TEST", hapseq=bytearray([65, 67, 71, 84, 78, 45]))
         self.assertEqual(d.stopA, 6)
         self.assertEqual(d.stopB, 6)
         self.assertEqual(list(d.seqA), [0, 1, 2, 3, 4, 5])
 
     def test_ctor_seq_and_size(self):
+        """Test Exception is correctly raised for bad ctor args"""
         with self.assertRaisesRegex(Exception, MSG_CTOR_SEQ_OR_SIZE):
             DipSeq("T", "TEST", bytearray([65]), 1)
 
     def test_write(self):
+        """Test the DipSeq.write() method"""
         d = DipSeq("T", "TEST", hapseq=bytearray([65, 67, 71, 84, 78]))
         out = StringIO()
         d.write(out)
@@ -156,13 +168,13 @@ class TestDipSeq(unittest.TestCase):
         mutseq.transform(refseq, vcf)
         for i in range(refseq.stopA):
             POS = i + 1               # VCF coords
-            if (POS == 5):
+            if POS == 5:
                 self.assertEqual(base(mutseq.seqA[i]), base(refseq.seqA[i]))
                 self.assertEqual(base(mutseq.seqB[i]), "G")
-            elif (POS == 9):
+            elif POS == 9:
                 self.assertEqual(base(mutseq.seqA[i]), "G")
                 self.assertEqual(base(mutseq.seqB[i]), base(refseq.seqA[i]))
-            elif (POS == 13):
+            elif POS == 13:
                 self.assertEqual(base(mutseq.seqA[i]), "T")
                 self.assertEqual(base(mutseq.seqA[i]), base(mutseq.seqB[i]))
                 self.assertNotEqual(base(mutseq.seqA[i]), base(refseq.seqA[i]))
@@ -282,8 +294,10 @@ class TestDipSeq(unittest.TestCase):
 
 
 class TestQasim(unittest.TestCase):
+    """Test module-level functions"""
 
     def test_read_fasta(self):
+        """Test read_fasta()"""
         for seq in read_fasta(test0fa):
             out = StringIO()
             seq.write(out)
@@ -344,6 +358,7 @@ class TestQasim(unittest.TestCase):
 
         for sample in range(num_quals):
             for q, p in zip(qvals[sample], pvals[sample]):
+                # Phred definition
                 self.assertEqual(p, 10 ** (q / -10))
 
         doc = ET.parse(testqpxml)
@@ -366,11 +381,11 @@ class TestQasim(unittest.TestCase):
         #   --seed 12345678 \
         #   --sample-name c9a6be94-bdb7-4c0d-a89d-4addbf76e486 \
         #   --vcf-input tests/resources/germline.vcf \
-        #   --num-pairs 2000 \
+        #   --num-pairs 160 \
         #   --quals-from tests/resources/test.qp.xml \
         #   --length1 150 \
         #   --length2 150 \
-        #   tests/resources/chr4_49207001_49227000.fa \
+        #   tests/resources/test1.fa \
         #   control.30x.read1.fastq \
         #   control.30x.read2.fastq
         #
@@ -382,11 +397,11 @@ class TestQasim(unittest.TestCase):
         #   --sample-name2 d44d739c-0143-4350-bba5-72dd068e05fd \
         #   --contamination 0.3 \
         #   --vcf-input2 tests/resources/somatic.vcf \
-        #   --num-pairs 4000 \
+        #   --num-pairs 320 \
         #   --quals-from tests/resources/test.qp.xml \
         #   --length1 150 \
         #   --length2 150 \
-        #   tests/resources/chr4_49207001_49227000.fa \
+        #   tests/resources/test2.fa \
         #   test.60x.read1.fastq \
         #   test.60x.read2.fastq
 
