@@ -186,7 +186,8 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
 
         // print
         for (j = 0; j < 2; ++j) {
-            fprintf(fpo[j], "@%s_%u_%u_e%d_e%d_%llx/%d\n", seqname, ext_coor[0], ext_coor[1],
+            fprintf(fpo[j], "@%s_%u_%u_e%d_e%d_%llx/%d\n", seqname,
+                    is_flip==0? ext_coor[0] : ext_coor[1], is_flip==0? ext_coor[1] : ext_coor[0],
                     n_err[0], n_err[1], (long long)ii, j==0? is_flip+1 : 2-is_flip);
             for (i = 0; i < s[j]; ++i)
                 fputc("ACGTN"[(int)tmp_seq[j][i]], fpo[j]);
