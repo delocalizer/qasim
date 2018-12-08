@@ -639,7 +639,7 @@ def reseed(seed):
     srand48(seed)
 
 
-def get_args():
+def get_args(argv):
     '''
     Return options and arguments
     '''
@@ -706,7 +706,7 @@ def get_args():
     othgrp.add_argument('-t', '--test-output', help='print mutated sequences to stdout', action='store_true')
     othgrp.add_argument('-w', '--wgsim-mode', help=HELP_WGSIM_MODE, action='store_true')
 
-    args = p.parse_args()
+    args = p.parse_args(argv)
 
     global WGSIM_MODE
     WGSIM_MODE = args.wgsim_mode
@@ -726,12 +726,10 @@ def get_args():
     return args
 
 
-def qasim_cli():
+def workflow(args):
     '''
-    Command-line interface for qasim.
+    Run the commands specified by the command-line args.
     '''
-
-    args = get_args()
 
     # variables from command line args
     cdef str fasta = args.fasta, quals_from = args.quals_from, \
@@ -903,4 +901,3 @@ def qasim_cli():
     free(q)
 
     return 0
-
