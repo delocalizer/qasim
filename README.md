@@ -22,25 +22,25 @@ Simulate mutations, fragment generation and shotgun sequencing on genomes.
 # help
 
 ```bash
-./qasim_wrapper.py -h
+./qasim_cli.py -h
 
-usage: qasim_wrapper.py [-h] [-r {Range 0.0<=<1.0}] [-H {Range 0.0<=<1.0}]
-                        [-R {Range 0.0<=<1.0}] [-X {Range 0.0<=<1.0}]
-                        [-M MAX_INSERTION] [-n SAMPLE_NAME]
-                        (-o VCF | -V VCF_INPUT) [-S]
-                        [--mut-rate2 {Range 0.0<=<1.0}]
-                        [--homo-frac2 {Range 0.0<=<1.0}]
-                        [--indel-frac2 {Range 0.0<=<1.0}]
-                        [--indel-extend2 {Range 0.0<=<1.0}]
-                        [--max-insertion2 MAX_INSERTION2]
-                        [--contamination {Range 0.0<=<1.0}]
-                        [--sample-name2 SAMPLE_NAME2]
-                        [--output2 VCF2 | --vcf-input2 VCF_INPUT2] [-z SIZE]
-                        [-s STD_DEV] [-N NUM_PAIRS] [-1 LENGTH1] [-2 LENGTH2]
-                        [-A {Range 0.0<=<1.0}]
-                        [-e {Range 0.0<=<1.0} | -Q QUALS_FROM]
-                        [--num-quals NUM_QUALS] [-d SEED] [-t] [-w]
-                        fasta read1fq read2fq
+usage: qasim_cli.py [-h] [-r {Range 0.0<=<1.0}] [-H {Range 0.0<=<1.0}]
+                    [-R {Range 0.0<=<1.0}] [-X {Range 0.0<=<1.0}]
+                    [-M MAX_INSERTION] [-n SAMPLE_NAME]
+                    (-o VCF | -V VCF_INPUT) [-S]
+                    [--mut-rate2 {Range 0.0<=<1.0}]
+                    [--homo-frac2 {Range 0.0<=<1.0}]
+                    [--indel-frac2 {Range 0.0<=<1.0}]
+                    [--indel-extend2 {Range 0.0<=<1.0}]
+                    [--max-insertion2 MAX_INSERTION2]
+                    [--contamination {Range 0.0<=<1.0}]
+                    [--sample-name2 SAMPLE_NAME2]
+                    [--output2 VCF2 | --vcf-input2 VCF_INPUT2] [-z SIZE]
+                    [-s STD_DEV] [-N NUM_PAIRS] [-1 LENGTH1] [-2 LENGTH2]
+                    [-A {Range 0.0<=<1.0}]
+                    [-e {Range 0.0<=<1.0} | -Q QUALS_FROM | --num-quals NUM_QUALS]
+                    [-d SEED] [-t] [-w]
+                    fasta read1fq read2fq
 
 Simulate mutations, fragment generation and shotgun sequencing on genomes.
 
