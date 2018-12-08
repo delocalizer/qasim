@@ -15,20 +15,6 @@ from qasim import qasim
 from qasim.qasim import EXCEPT_MUT, MSG_SKIP_MUT, MSG_CTOR_SEQ_OR_SIZE
 from qasim.qasim import VCF, DipSeq
 
-# test resources located relative to the current dir
-testfa0 = path_join(dirname(__file__), 'resources/test.fa.0')
-testfa1 = path_join(dirname(__file__), 'resources/test.fa.1')
-testvcf0 = path_join(dirname(__file__), 'resources/test.vcf.0')
-testvcf1 = path_join(dirname(__file__), 'resources/test.vcf.1')
-testvcf2 = path_join(dirname(__file__), 'resources/test.vcf.2')
-testvcfgrm = path_join(dirname(__file__), 'resources/test.vcf.3_1')
-testvcfsom = path_join(dirname(__file__), 'resources/test.vcf.3_2')
-testvcf4 = path_join(dirname(__file__), 'resources/test.vcf.4')
-testqpxml = path_join(dirname(__file__), 'resources/test.qp.xml')
-mut_seq = path_join(dirname(__file__), 'resources/mutagen_result.sequence')
-mut_vcf = path_join(dirname(__file__), 'resources/mutagen_result.vcf')
-
-
 @contextmanager
 def captured_output():
     """
@@ -53,8 +39,14 @@ def base(code):
 class TestVcf(unittest.TestCase):
     """VCF class tests"""
 
-    def setUp(self):
-        self.testvcf0 = VCF.fromfile(testvcf0)
+    @classmethod
+    def setUpClass(cls):
+        """Load some test resources"""
+        # Notify aggressively so we know where we are if setup fails
+        sys.stdout.write("\nTestVcf.setUpClass\n")
+        sys.stdout.flush()
+        cls.vcf0 = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.0'))
 
     def test_ctor(self):
         """Test the no-args constructor"""
@@ -64,7 +56,7 @@ class TestVcf(unittest.TestCase):
 
     def test_tuples(self):
         """Test the VCF.tuples() method"""
-        CHROM, POS, REF, ALT, GT = next(self.testvcf0.tuples())
+        CHROM, POS, REF, ALT, GT = next(self.vcf0.tuples())
         self.assertEqual(CHROM, "TEST")
         self.assertEqual(POS, 5)
         self.assertEqual(REF, "C")
@@ -74,24 +66,52 @@ class TestVcf(unittest.TestCase):
     def test_write(self):
         """Test the VCF.write() method"""
         with tempfile.TemporaryFile(mode='w+t') as fh:
-            self.testvcf0.write(fh)
+            self.vcf0.write(fh)
             fh.seek(0)
             lines = fh.readlines()
-            self.assertEqual(''.join(lines[:6]), self.testvcf0.header)
+            self.assertEqual(''.join(lines[:6]), self.vcf0.header)
             self.assertEqual(
                 ''.join(lines[6:]), '\n'.join(
-                    '\t'.join(str(r[c]) for c in self.testvcf0.columns)
-                    for r in self.testvcf0.records) + '\n')
+                    '\t'.join(str(r[c]) for c in self.vcf0.columns)
+                    for r in self.vcf0.records) + '\n')
 
     def test_fromfile(self):
         """Test the VCF.fromfile() method"""
-        vcf = VCF.fromfile(testvcf0, "sample1")
+        vcf = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.0'), "sample1")
         self.assertEqual(vcf.sample, "sample1")
         self.assertEqual(len(vcf.records), 3)
 
 
 class TestDipSeq(unittest.TestCase):
     """DipSeq class tests"""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load some test resources"""
+        # Notify aggressively so we know where we are if setup fails
+        sys.stdout.write("\nTestDipSeq.setUpClass\n")
+        sys.stdout.flush()
+        cls.mut_seq = path_join(
+            dirname(__file__), 'resources/mutagen_result.sequence')
+        cls.mut_vcf = path_join(
+            dirname(__file__), 'resources/mutagen_result.vcf')
+        cls.fa0 = next(qasim.read_fasta(
+            path_join(dirname(__file__), 'resources/test.fa.0')))
+        cls.fa1 = next(qasim.read_fasta(
+            path_join(dirname(__file__), 'resources/test.fa.1')))
+        cls.vcf0 = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.0'))
+        cls.vcf1 = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.1'))
+        cls.vcf2 = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.2'))
+        cls.vcfgrm = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.3_1'))
+        cls.vcfsom = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.3_2'))
+        cls.vcf4 = VCF.fromfile(
+            path_join(dirname(__file__), 'resources/test.vcf.4'))
 
     def test_ctor_from_size(self):
         """Test the constructor that takes size argument"""
@@ -127,12 +147,12 @@ class TestDipSeq(unittest.TestCase):
     def test_mutagen(self):
         """tests both mutagen and transform methods"""
         # Another case where we take a shortcut by simply asserting that the
-        # data in the test resource files are valid "by inspection" and
-        # require that the test run matches them every time. In this case
-        # cross-referencing the randomly generated mutations in the vcf with
-        # the transformed sequence file is what's required. You should take
-        # a look — it's interesting!
-        refseq = next(qasim.read_fasta(testfa1))
+        # data in the test resource files mut_vcf and mut_seq are valid "by
+        # inspection" and require that the test run matches them every time.
+        # In this case cross-referencing the randomly generated mutations in
+        # the vcf with the transformed sequence file is what's required. You
+        # should eyeball it yourself — it's interesting!
+        refseq = self.fa1
         vcf = VCF("sample1")
         mut_rate = 0.01
         homo_frac = 0.333333
@@ -144,7 +164,7 @@ class TestDipSeq(unittest.TestCase):
                        indel_extend, max_insertion)
         out = StringIO()
         vcf.write(out)
-        with open(mut_vcf) as fh:
+        with open(self.mut_vcf) as fh:
             self.assertEqual(out.getvalue(), ''.join(fh.readlines()))
         mutseq = DipSeq(
             refseq.seqid + '.mut',
@@ -154,19 +174,18 @@ class TestDipSeq(unittest.TestCase):
         mutseq.transform(refseq, vcf)
         out = StringIO()
         mutseq.write(out)
-        with open(mut_seq) as fh:
+        with open(self.mut_seq) as fh:
             self.assertEqual(out.getvalue(), ''.join(fh.readlines()))
 
     def test_transform_0(self):
         """germline het & hom snps"""
-        vcf = VCF.fromfile(testvcf0, "sample1")
-        refseq = next(qasim.read_fasta(testfa0))
+        refseq = self.fa0
         mutseq = DipSeq(
             refseq.seqid + '.mut',
             refseq.description,
             size=refseq.seqA.shape[0] * 2,
             fold=refseq.fold)
-        mutseq.transform(refseq, vcf)
+        mutseq.transform(refseq, self.vcf0)
         for i in range(refseq.stopA):
             POS = i + 1               # VCF coords
             if POS == 5:
@@ -185,14 +204,13 @@ class TestDipSeq(unittest.TestCase):
 
     def test_transform_1(self):
         """simple het & hom indels"""
-        vcf = VCF.fromfile(testvcf1, "sample1")
-        refseq = next(qasim.read_fasta(testfa0))
+        refseq = self.fa0
         mutseq = DipSeq(
             refseq.seqid + '.mut',
             refseq.description,
             size=refseq.seqA.shape[0] * 2,
             fold=refseq.fold)
-        mutseq.transform(refseq, vcf)
+        mutseq.transform(refseq, self.vcf1)
         insertion_1 = range(4, 7)
         self.assertEqual(
             ''.join(base(mutseq.seqA[POS - 1]) for POS in insertion_1), "AGG")
@@ -216,14 +234,13 @@ class TestDipSeq(unittest.TestCase):
 
     def test_transform_2(self):
         """complex overlapping mutations"""
-        vcf = VCF.fromfile(testvcf2, "sample1")
-        refseq = next(qasim.read_fasta(testfa0))
+        refseq = self.fa0
         mutseq = DipSeq(
             refseq.seqid + '.mut',
             refseq.description,
             size=refseq.seqA.shape[0] * 2,
             fold=refseq.fold)
-        mutseq.transform(refseq, vcf)
+        mutseq.transform(refseq, self.vcf2)
         out = StringIO()
         mutseq.write(out)
         # we take a bit of a shorcut and rather than testing all the
@@ -239,16 +256,14 @@ class TestDipSeq(unittest.TestCase):
 
     def test_transform_3(self):
         """overlapping mutations in somatic mode"""
-        grmvcf = VCF.fromfile(testvcfgrm)
-        somvcf = VCF.fromfile(testvcfsom)
-        refseq = next(qasim.read_fasta(testfa0))
+        refseq = self.fa0
 
         grmseq = DipSeq(
             refseq.seqid + '.grm',
             refseq.description,
             size=refseq.seqA.shape[0] * 2,
             fold=refseq.fold)
-        grmseq.transform(refseq, grmvcf)
+        grmseq.transform(refseq, self.vcfgrm)
         out = StringIO()
         grmseq.write(out)
         self.assertEqual(out.getvalue(), (
@@ -266,7 +281,7 @@ class TestDipSeq(unittest.TestCase):
             fold=refseq.fold)
         with captured_output() as (out, err):
             expected_msg = MSG_SKIP_MUT % {'allele': 1, 'POS': 5}
-            somseq.transform(grmseq, somvcf)
+            somseq.transform(grmseq, self.vcfsom)
             self.assertEqual(err.getvalue(), expected_msg)
         out = StringIO()
         somseq.write(out)
@@ -282,8 +297,7 @@ class TestDipSeq(unittest.TestCase):
 
     def test_transform_4(self):
         """disallow mutations overlapping deletions in same vcf"""
-        vcf = VCF.fromfile(testvcf4, "sample1")
-        refseq = next(qasim.read_fasta(testfa0))
+        refseq = self.fa0
         mutseq = DipSeq(
             refseq.seqid + '.mut',
             refseq.description,
@@ -291,15 +305,27 @@ class TestDipSeq(unittest.TestCase):
             fold=refseq.fold)
         expected_msg = EXCEPT_MUT % {'POS': 7, 'OLDPOS': 5}
         with self.assertRaisesRegex(Exception, expected_msg):
-            mutseq.transform(refseq, vcf)
+            mutseq.transform(refseq, self.vcf4)
 
 
 class TestQasim(unittest.TestCase):
     """Test module-level functions"""
 
+    @classmethod
+    def setUpClass(cls):
+        """Load some test resources"""
+        # Notify aggressively so we know where we are if setup fails
+        sys.stdout.write("\nTestQasim.setUpClass\n")
+        sys.stdout.flush()
+        cls.fa1 = path_join(dirname(__file__), 'resources/test.fa.1')
+        cls.vcfgrm = path_join(dirname(__file__), 'resources/germline.vcf')
+        cls.vcfsom = path_join(dirname(__file__), 'resources/somatic.vcf')
+        cls.qpxml = path_join(dirname(__file__), 'resources/test.qp.xml')
+
     def test_read_fasta(self):
         """Test read_fasta()"""
-        for seq in qasim.read_fasta(testfa0):
+        for seq in qasim.read_fasta(
+                path_join(dirname(__file__), 'resources/test.fa.0')):
             out = StringIO()
             seq.write(out)
             self.assertEqual(out.getvalue(), (
@@ -355,14 +381,14 @@ class TestQasim(unittest.TestCase):
         num_quals = 10000
         qvals = np.ndarray((num_quals, read_length), dtype='u1')
         pvals = np.ndarray((num_quals, read_length))
-        qasim.gen_quals(testqpxml, read_length, num_quals, qvals, pvals)
+        qasim.gen_quals(self.qpxml, read_length, num_quals, qvals, pvals)
 
         for sample in range(num_quals):
             for q, p in zip(qvals[sample], pvals[sample]):
                 # Phred definition
                 self.assertEqual(p, 10 ** (q / -10))
 
-        doc = ET.parse(testqpxml)
+        doc = ET.parse(self.qpxml)
         Q = doc.getroot().find('.//QUAL')
         for cyclenum in range(1, read_length + 1):
             cycle = Q.find(".//Cycle[@value='%s']" % cyclenum)
@@ -377,34 +403,38 @@ class TestQasim(unittest.TestCase):
 
     def test_integration_1(self):
         """somatic mode with mutations specified by input VCFs"""
+        grm_out1 = path_join(dirname(__file__), "control.30x.read1.fastq")
+        grm_out2 = path_join(dirname(__file__), "control.30x.read2.fastq")
         grm_args = [
             "--seed", "12345678",
             "--sample-name", "c9a6be94-bdb7-4c0d-a89d-4addbf76e486",
-            "--vcf-input", "tests/resources/germline.vcf",
+            "--vcf-input", self.vcfgrm,
             "--num-pairs", "160",
-            "--quals-from", testqpxml,
+            "--quals-from", self.qpxml,
             "--length1", "150",
             "--length2", "150",
-            testfa1,
-            path_join(dirname(__file__), "control.30x.read1.fastq"),
-            path_join(dirname(__file__), "control.30x.read2.fastq")]
+            self.fa1,
+            grm_out1,
+            grm_out2]
         qasim.workflow(qasim.get_args(grm_args))
 
+        som_out1 = path_join(dirname(__file__), "test.60x.read1.fastq")
+        som_out2 = path_join(dirname(__file__), "test.60x.read2.fastq")
         som_args = [
             "--seed", "12345678",
             "--sample-name", "c9a6be94-bdb7-4c0d-a89d-4addbf76e486",
-            "--vcf-input", "tests/resources/germline.vcf",
+            "--vcf-input", self.vcfgrm,
             "--somatic-mode",
             "--sample-name2", "d44d739c-0143-4350-bba5-72dd068e05fd",
             "--contamination", "0.3",
-            "--vcf-input2", "tests/resources/somatic.vcf",
+            "--vcf-input2", self.vcfsom,
             "--num-pairs", "320",
-            "--quals-from", testqpxml,
+            "--quals-from", self.qpxml,
             "--length1", "150",
             "--length2", "150",
-            testfa1,
-            path_join(dirname(__file__), "test.60x.read1.fastq"),
-            path_join(dirname(__file__), "test.60x.read2.fastq")]
+            self.fa1,
+            som_out1,
+            som_out2]
         qasim.workflow(qasim.get_args(som_args))
 
 
