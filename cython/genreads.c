@@ -121,7 +121,7 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             // ensure frag length > read length
             d = d > max_size? d : max_size;
             pos = (int)((target_len - d + 1) * drand48());
-        } while (pos < 0 || pos + d - 1 >= target_len);
+        } while (pos < 0 || pos + d - 1 >= (int)target_len);
 
         // flip or not
         if (drand48() < 0.5) {

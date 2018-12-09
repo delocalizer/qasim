@@ -190,7 +190,7 @@ cdef class VCF:
 cdef class DipSeq:
 
     cdef public str seqid, description
-    cdef public int fold                  # line length for output
+    cdef public uint8_t fold              # line length for output
     cdef public uint8_t[:] seqA, seqB     # base sequence
     cdef public uint32_t[:] relA, relB    # position on reference
     cdef public uint32_t stopA, stopB
@@ -200,7 +200,7 @@ cdef class DipSeq:
         Parameterized constructor initialized either with a haploid (1-d) buffer
         as seq argument or empty, if supplied size.
         '''
-        cdef int i
+        cdef uint32_t i
         self.seqid = seqid
         self.description = description
         self.fold = fold
@@ -249,8 +249,11 @@ cdef class DipSeq:
         Generate mutations on haploid reference sequence, updating vcf in-place.
         '''
         cdef int allele, deleting = 0, appended = 0
-        cdef uint8_t *refseq[2], refbase, prevref, snp, j
-        cdef uint32_t i, *refrel[2], rstop[2], POS
+        cdef uint8_t refbase, prevref, snp, j
+        cdef uint8_t *refseq[2]
+        cdef uint32_t i, POS
+        cdef uint32_t rstop[2]
+        cdef uint32_t *refrel[2]
         cdef str seqid = reference.seqid
         cdef list records = vcf.records, alt
         cdef dict vrec = {}
@@ -355,12 +358,18 @@ cdef class DipSeq:
         must be a single base only.
         '''
         # gt is coded phased genotype 0=(0|0), 1=(1|0), 2=(0|1), 3=(1|1)
-        cdef int allele, c, r, snp, ins, gt = 0, refsz, altsz
-        cdef uint8_t *origseq[2], *mutseq[2]
-        cdef uint32_t *origrel[2], *mutrel[2], opos[2], mpos[2], ostop[2], mstop[2], POS, OLDPOS
+        cdef int allele, c, snp, ins, gt = 0, refsz, altsz
+        cdef uint8_t *origseq[2]
+        cdef uint8_t *mutseq[2]
+        cdef uint32_t POS, OLDPOS, del_l, del_r, r
+        cdef uint32_t opos[2]
+        cdef uint32_t mpos[2]
+        cdef uint32_t ostop[2]
+        cdef uint32_t mstop[2]
+        cdef uint32_t *origrel[2]
+        cdef uint32_t *mutrel[2]
         cdef str alt, seqid = original.seqid.split('.')[0]
         cdef str CHROM, REF, ALT, GT
-        cdef uint32_t del_l, del_r
         cdef object mutations
 
         original.get_ptrs(origseq, origrel)
@@ -385,7 +394,7 @@ cdef class DipSeq:
                 r = origrel[allele][opos[allele]]
 
                 # in deletion
-                if (del_l <= r <= del_r):
+                if (del_l <= <uint32_t>r <= del_r):
                     if r == POS:
                         # DipSeq.mutagen() doesn't generate mutations within
                         # deletions with the exception that the reference base
@@ -469,7 +478,8 @@ cdef class DipSeq:
         '''
         cdef int i, startln, allele, j, fold = self.fold
         cdef uint8_t *seq[2]
-        cdef uint32_t *rel[2], stop[2]
+        cdef uint32_t stop[2]
+        cdef uint32_t *rel[2]
 
         self.get_ptrs(seq, rel)
         self.get_stop(stop)
@@ -754,7 +764,8 @@ def workflow(args):
     cdef int n_ref = 0, i, mutseqsize, mutseq2size
     cdef VCF vcf, vcf2
     cdef DipSeq refseq, mutseq, mutseq2
-    cdef FILE *fpout1, *fpout2
+    cdef FILE *fpout1
+    cdef FILE *fpout2
     cdef uint8_t[:, :] qvals
     cdef double[:, :] pvals
     cdef char **q = NULL
@@ -811,7 +822,7 @@ def workflow(args):
         n_grm = <uint64_t>floor(n_pairs * contamination) if somatic_mode else n_pairs
         n_som = <uint64_t>ceil(n_pairs * (1 - contamination))
 
-        if refseq.stopA < size + 3 * std_dev:
+        if refseq.stopA < <uint32_t>(size + 3 * std_dev):
             sys.stderr.write(
                 "[%s] skip sequence '%s' as it is shorter than %d\n" %
                 (__name__, refseq.seqid, size + 3 * std_dev))
