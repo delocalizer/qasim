@@ -22,7 +22,7 @@ Simulate mutations, fragment generation and shotgun sequencing on genomes.
 # help
 
 ```bash
-./qasim_cli.py -h
+python3 -m qasim.qasim_cli -h
 
 usage: qasim_cli.py [-h] [-r {Range 0.0<=<1.0}] [-H {Range 0.0<=<1.0}]
                     [-R {Range 0.0<=<1.0}] [-X {Range 0.0<=<1.0}]

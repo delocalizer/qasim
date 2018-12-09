@@ -14,7 +14,7 @@ import numpy as np
 from qasim import qasim
 from qasim.qasim import EXCEPT_MUT, MSG_SKIP_MUT, MSG_CTOR_SEQ_OR_SIZE
 from qasim.qasim import VCF, DipSeq
-from tests.testutil import Fastq 
+from .testutil import Fastq 
 
 @contextmanager
 def captured_output():

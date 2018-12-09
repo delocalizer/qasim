@@ -15186,12 +15186,12 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
  * 
  * def workflow(args):             # <<<<<<<<<<<<<<
  *     '''
- *     Run the commands specified by the command-line args.
+ *     Run the workflow specified by the command line args.
  */
 
 /* Python wrapper */
 static PyObject *__pyx_pw_5qasim_5qasim_12workflow(PyObject *__pyx_self, PyObject *__pyx_v_args); /*proto*/
-static char __pyx_doc_5qasim_5qasim_11workflow[] = "\n    Run the commands specified by the command-line args.\n    ";
+static char __pyx_doc_5qasim_5qasim_11workflow[] = "\n    Run the workflow specified by the command line args.\n    ";
 static PyMethodDef __pyx_mdef_5qasim_5qasim_12workflow = {"workflow", (PyCFunction)__pyx_pw_5qasim_5qasim_12workflow, METH_O, __pyx_doc_5qasim_5qasim_11workflow};
 static PyObject *__pyx_pw_5qasim_5qasim_12workflow(PyObject *__pyx_self, PyObject *__pyx_v_args) {
   PyObject *__pyx_r = 0;
@@ -18843,7 +18843,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_11workflow(CYTHON_UNUSED PyObject *__pyx
  * 
  * def workflow(args):             # <<<<<<<<<<<<<<
  *     '''
- *     Run the commands specified by the command-line args.
+ *     Run the workflow specified by the command line args.
  */
 
   /* function exit code */
@@ -37477,7 +37477,7 @@ static int __Pyx_InitCachedConstants(void) {
  * 
  * def workflow(args):             # <<<<<<<<<<<<<<
  *     '''
- *     Run the commands specified by the command-line args.
+ *     Run the workflow specified by the command line args.
  */
   __pyx_tuple__132 = PyTuple_Pack(53, __pyx_n_s_args, __pyx_n_s_fasta, __pyx_n_s_quals_from_2, __pyx_n_s_sample_name_2, __pyx_n_s_sample_name2_2, __pyx_n_s_vcf_input_2, __pyx_n_s_vcf_input2_2, __pyx_n_s_read1fq, __pyx_n_s_read2fq, __pyx_n_s_output_2, __pyx_n_s_output2_2, __pyx_n_s_max_insertion, __pyx_n_s_size, __pyx_n_s_std_dev_2, __pyx_n_s_num_pairs_2, __pyx_n_s_length1_2, __pyx_n_s_length2_2, __pyx_n_s_num_quals, __pyx_n_s_seed_2, __pyx_n_s_max_insertion2_2, __pyx_n_s_mut_rate, __pyx_n_s_homo_frac, __pyx_n_s_indel_frac, __pyx_n_s_indel_extend, __pyx_n_s_mut_rate2_2, __pyx_n_s_homo_frac2_2, __pyx_n_s_indel_frac2_2, __pyx_n_s_indel_extend2_2, __pyx_n_s_contamination_2, __pyx_n_s_error_rate_2, __pyx_n_s_ambig_frac_2, __pyx_n_s_somatic_mode, __pyx_n_s_test_output_2, __pyx_n_s_tot_len, __pyx_n_s_n_pairs, __pyx_n_s_n_som, __pyx_n_s_n_grm, __pyx_n_s_n_ref, __pyx_n_s_i, __pyx_n_s_mutseqsize, __pyx_n_s_mutseq2size, __pyx_n_s_vcf, __pyx_n_s_vcf2, __pyx_n_s_refseq, __pyx_n_s_mutseq, __pyx_n_s_mutseq2, __pyx_n_s_fpout1, __pyx_n_s_fpout2, __pyx_n_s_qvals, __pyx_n_s_pvals, __pyx_n_s_q, __pyx_n_s_p, __pyx_n_s_bseqid); if (unlikely(!__pyx_tuple__132)) __PYX_ERR(0, 729, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__132);
@@ -38508,7 +38508,7 @@ if (!__Pyx_RefNanny) {
  * 
  * def workflow(args):             # <<<<<<<<<<<<<<
  *     '''
- *     Run the commands specified by the command-line args.
+ *     Run the workflow specified by the command line args.
  */
   __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5qasim_5qasim_12workflow, NULL, __pyx_n_s_qasim_qasim); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 729, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);

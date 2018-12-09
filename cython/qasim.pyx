@@ -728,7 +728,7 @@ def get_args(argv):
 
 def workflow(args):
     '''
-    Run the commands specified by the command-line args.
+    Run the workflow specified by the command line args.
     '''
 
     # variables from command line args
