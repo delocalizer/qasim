@@ -2,4 +2,4 @@
 import sys
 from qasim import qasim
 
-qasim.workflow(qasim.get_args(sys.argv))
+qasim.workflow(qasim.get_args(sys.argv[1:]))
