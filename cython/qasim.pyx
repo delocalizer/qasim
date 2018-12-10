@@ -40,7 +40,8 @@ cdef extern int genreads(FILE *fpout1,
                          const char *seqname,
                          int num_quals,
                          double **p,
-                         char **q)
+                         char **q,
+                         int wgsim_mode)
 
 
 cdef uint8_t *nst_nt4_table = [
@@ -859,7 +860,8 @@ def workflow(args):
                      &(mutseq.relA[0]), &(mutseq.relB[0]),
                      mutseq.stopA, mutseq.stopB,
                      n_grm, size, std_dev, length1, length2,
-                     error_rate, ambig_frac, bseqid, num_quals, p, q)
+                     error_rate, ambig_frac, bseqid, num_quals, p, q,
+                     int(WGSIM_MODE))
 
         if somatic_mode:
             mutseq2size = <int>(1.1 * mutseq.seqA.shape[0] + 10 * max_insertion2)
@@ -894,7 +896,8 @@ def workflow(args):
                          &(mutseq2.relA[0]), &(mutseq2.relB[0]),
                          mutseq2.stopA, mutseq2.stopB,
                          n_som, size, std_dev, length1, length2,
-                         error_rate, ambig_frac, bseqid, num_quals, p, q)
+                         error_rate, ambig_frac, bseqid, num_quals, p, q,
+                         int(WGSIM_MODE))
 
     if not vcf_input:
         vcf.write(output)

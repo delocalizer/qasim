@@ -76,7 +76,7 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             uint32_t *rel1, uint32_t *rel2, uint32_t len1, uint32_t len2,
             uint64_t n_pairs, int dist, int std_dev, int size_l, int size_r, 
             double ERR_RATE, double MAX_N_RATIO, const char *seqname,
-            int num_quals, double **p, char **q)
+            int num_quals, double **p, char **q, int wgsim_mode)
 {
     uint8_t *rseq[2] = { s1, s2 };      // base sequence
     uint32_t *rel[2] = { rel1, rel2 };  // reference-relative positions
@@ -187,7 +187,9 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
         // print
         for (j = 0; j < 2; ++j) {
             fprintf(fpo[j], "@%s_%u_%u_e%d_e%d_%llx/%d\n", seqname,
-                    is_flip==0? ext_coor[0] : ext_coor[1], is_flip==0? ext_coor[1] : ext_coor[0],
+                    // wgsim always prints low_high 
+                    wgsim_mode==1? ext_coor[0] : is_flip==0? ext_coor[0] : ext_coor[1],
+                    wgsim_mode==1? ext_coor[1] : is_flip==0? ext_coor[1] : ext_coor[0],
                     n_err[0], n_err[1], (long long)ii, j==0? is_flip+1 : 2-is_flip);
             for (i = 0; i < s[j]; ++i)
                 fputc("ACGTN"[(int)tmp_seq[j][i]], fpo[j]);
