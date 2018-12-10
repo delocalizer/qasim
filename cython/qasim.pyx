@@ -476,8 +476,9 @@ cdef class DipSeq:
 
         @param dest: file or stream or anything with write and flush.
         '''
-        cdef int i, startln, allele, j, fold = self.fold
+        cdef int startln, allele, j, fold = self.fold
         cdef uint8_t *seq[2]
+        cdef uint32_t i
         cdef uint32_t stop[2]
         cdef uint32_t *rel[2]
 
