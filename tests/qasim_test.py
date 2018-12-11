@@ -319,8 +319,8 @@ class TestTestUtils(unittest.TestCase):
         # Notify aggressively so we know where we are if setup fails
         sys.stdout.write("\nTestTestUtils.setUpClass\n")
         sys.stdout.flush()
-        cls.fq1 = path_join(dirname(__file__), 'resources/30x.read1.fastq')
-        cls.fq2 = path_join(dirname(__file__), 'resources/30x.read2.fastq')
+        cls.fq1 = path_join(dirname(__file__), 'resources/test.30x.1.fq')
+        cls.fq2 = path_join(dirname(__file__), 'resources/test.30x.2.fq')
 
     def test_Fastq(self):
         """Test the Fastq class"""
