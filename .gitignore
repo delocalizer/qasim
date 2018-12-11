@@ -3,4 +3,4 @@ build/
 qasim/*.so
 Qasim.egg-info*
 *.swp
-tests/*.fastq
+tests/*.fq
