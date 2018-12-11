@@ -309,6 +309,39 @@ class TestDipSeq(unittest.TestCase):
             mutseq.transform(refseq, self.vcf4)
 
 
+class TestTestUtils(unittest.TestCase):
+    """Test the testing framework's methods"""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load some test resources"""
+        # Notify aggressively so we know where we are if setup fails
+        sys.stdout.write("\nTestTestUtils.setUpClass\n")
+        sys.stdout.flush()
+        cls.fq1 = path_join(dirname(__file__), 'resources/30x.read1.fastq')
+        cls.fq2 = path_join(dirname(__file__), 'resources/30x.read2.fastq')
+
+    def test_Fastq(self):
+        """Test the Fastq class"""
+        fq1 = Fastq(self.fq1)
+        self.assertEqual(len(fq1.records), 160)
+        self.assertEqual(fq1.read_length, 150)
+        self.assertEqual(fq1.records[-1]['id'], "@TEST.1_965_1528_e0_e2_9f/1")
+
+    def test_forwardization_and_coverage(self):
+        """Confirm that coverages calculated two ways agree"""
+        fq1 = Fastq(self.fq1)
+        fq2 = Fastq(self.fq2)
+        fwd1 = Fastq.forwardize(fq1)
+        fwd2 = Fastq.forwardize(fq2)
+        low = min(fq1.minpos, fq2.minpos)
+        high = max(fq1.maxpos, fq2.maxpos)
+        for pos in range(low, high + 1):
+            cov1 = set(r['id'] for r in fq1.coverage(pos) + fq2.coverage(pos))
+            cov2 = set(r['id'] for r in fwd1.coverage(pos) + fwd2.coverage(pos))
+            self.assertEqual(cov1, cov2)
+
+
 class TestQasim(unittest.TestCase):
     """Test module-level functions"""
 
@@ -403,22 +436,61 @@ class TestQasim(unittest.TestCase):
             self.assertAlmostEqual(mean_qual / mu_qual, 1.0, delta=0.01)
 
     def test_integration_1(self):
-        """somatic mode with mutations specified by input VCFs"""
-        grm_out1 = path_join(dirname(__file__), "control.30x.read1.fastq")
-        grm_out2 = path_join(dirname(__file__), "control.30x.read2.fastq")
-        grm_args = [
+        """germline mode with mutations specified by input VCF"""
+        # We take advantage of the fact that we know the true location
+        # of the generated reads on the reference (from the coord1_coord2
+        # embedded in read ids) to check genotypes at positions without
+        # having to align the reads first.
+        out1 = path_join(dirname(__file__), "control.30x.read1.fastq")
+        out2 = path_join(dirname(__file__), "control.30x.read2.fastq")
+        read_length = 150
+        args = [
             "--seed", "12345678",
             "--sample-name", "c9a6be94-bdb7-4c0d-a89d-4addbf76e486",
             "--vcf-input", self.vcfgrm,
             "--num-pairs", "160",
             "--quals-from", self.qpxml,
-            "--length1", "150",
-            "--length2", "150",
+            "--length1", str(read_length),
+            "--length2", str(read_length),
             self.fa1,
-            grm_out1,
-            grm_out2]
-        qasim.workflow(qasim.get_args(grm_args))
+            out1,
+            out2]
+        qasim.workflow(qasim.get_args(args))
+        # work with "forwardized" reads: it's more convenient to only deal
+        # with variants relative to the reference strand.
+        fq1 = Fastq.forwardize(Fastq(out1))
+        fq2 = Fastq.forwardize(Fastq(out2))
+        # In the assertions below we're quite lenient to account for both
+        # sequencing errors (introducing non-REF/ALT bases) and in the case
+        # of the first two het positions, imbalanced read coverage of the
+        # A & B alleles. The variants here are specified in `self.vcfgrm`
+        # A>C 0|1 SNP at position 81
+        pos = 81
+        covering_reads = fq1.coverage(pos) + fq2.coverage(pos)
+        pos_bases = [r['seq'][pos - r['read_start']] for r in covering_reads]
+        frac_A = pos_bases.count('A')/float(len(pos_bases))
+        frac_C = pos_bases.count('C')/float(len(pos_bases))
+        self.assertAlmostEqual(frac_A, 0.5, delta=0.1)
+        self.assertAlmostEqual(frac_C, 0.5, delta=0.1)
+        # A>C 1|0 SNP at position 161
+        pos = 161
+        covering_reads = fq1.coverage(pos) + fq2.coverage(pos)
+        pos_bases = [r['seq'][pos - r['read_start']] for r in covering_reads]
+        frac_A = pos_bases.count('A')/float(len(pos_bases))
+        frac_C = pos_bases.count('C')/float(len(pos_bases))
+        self.assertAlmostEqual(frac_A, 0.5, delta=0.1)
+        self.assertAlmostEqual(frac_C, 0.5, delta=0.1)
+        # A>C 1|1 SNP at position 241
+        pos = 241
+        covering_reads = fq1.coverage(pos) + fq2.coverage(pos)
+        pos_bases = [r['seq'][pos - r['read_start']] for r in covering_reads]
+        frac_A = pos_bases.count('A')/float(len(pos_bases))
+        frac_C = pos_bases.count('C')/float(len(pos_bases))
+        self.assertAlmostEqual(frac_A, 0.0, delta=0.1)
+        self.assertAlmostEqual(frac_C, 1.0, delta=0.1)
 
+    def test_integration_2(self):
+        """somatic mode with mutations specified by input VCFs"""
         som_out1 = path_join(dirname(__file__), "test.60x.read1.fastq")
         som_out2 = path_join(dirname(__file__), "test.60x.read2.fastq")
         som_args = [
@@ -437,6 +509,8 @@ class TestQasim(unittest.TestCase):
             som_out1,
             som_out2]
         qasim.workflow(qasim.get_args(som_args))
+        som_fq1 = Fastq(som_out1)
+        som_fq2 = Fastq(som_out2)
 
 
 if __name__ == '__main__':
