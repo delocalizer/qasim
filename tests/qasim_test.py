@@ -352,18 +352,20 @@ class TestQasim(unittest.TestCase):
         # Notify aggressively so we know where we are if setup fails
         sys.stdout.write("\nTestQasim.setUpClass\n")
         sys.stdout.flush()
+        cls.fa0 = path_join(dirname(__file__), 'resources/test.fa.0')
         cls.fa1 = path_join(dirname(__file__), 'resources/test.fa.1')
+        cls.fa2 = path_join(dirname(__file__), 'resources/test.fa.2')
         cls.vcfgrm = path_join(dirname(__file__), 'resources/germline.vcf')
         cls.vcfsom = path_join(dirname(__file__), 'resources/somatic.vcf')
+        cls.vcfindel = path_join(dirname(__file__), 'resources/indel.vcf.1')
         cls.qpxml = path_join(dirname(__file__), 'resources/test.qp.xml')
         cls.fq1 = path_join(dirname(__file__), 'resources/test.60x.1.fq')
         cls.fq2 = path_join(dirname(__file__), 'resources/test.60x.2.fq')
 
     def test_read_fasta(self):
         """Test read_fasta()"""
-        for seq in qasim.read_fasta(
-                path_join(dirname(__file__), 'resources/test.fa.0')):
-            out = StringIO()
+        seq = next(qasim.read_fasta(self.fa0))
+        with StringIO() as out:
             seq.write(out)
             self.assertEqual(out.getvalue(), (
                 ">TEST.0 small fasta for testing\n"
@@ -438,15 +440,153 @@ class TestQasim(unittest.TestCase):
             mean_qual = sum(samples) / float(len(samples))  # sample mean
             self.assertAlmostEqual(mean_qual / mu_qual, 1.0, delta=0.01)
 
+    def test_integration_0(self):
+        """check for any & all changes to output"""
+        out1 = path_join(dirname(__file__), "test_integration_0.1.fq")
+        out2 = path_join(dirname(__file__), "test_integration_0.2.fq")
+        read_length = 150
+        contamination = 0.3
+        args = [
+            "--seed", "12345678",
+            "--sample-name", "c9a6be94-bdb7-4c0d-a89d-4addbf76e486",
+            "--vcf-input", self.vcfgrm,
+            "--somatic-mode",
+            "--sample-name2", "d44d739c-0143-4350-bba5-72dd068e05fd",
+            "--contamination", str(contamination),
+            "--vcf-input2", self.vcfsom,
+            "--num-pairs", "320",
+            "--quals-from", self.qpxml,
+            "--length1", str(read_length),
+            "--length2", str(read_length),
+            self.fa1,
+            out1,
+            out2]
+        qasim.workflow(qasim.get_args(args))
+        # There's no complicated logic here, just run a deterministic workflow
+        # and compare the output to what it was when we wrote the tests.
+        with open(out1) as test, open(self.fq1) as original:
+            test_content = test.readlines()
+            original_content = original.readlines()
+            self.assertEqual(test_content, original_content)
+        with open(out2) as test, open(self.fq2) as original:
+            test_content = test.readlines()
+            original_content = original.readlines()
+            self.assertEqual(test_content, original_content)
+
     def test_integration_1(self):
+        """check reads are generated correctly over indels"""
+        out1 = path_join(dirname(__file__), "test_integration_1.1.fq")
+        out2 = path_join(dirname(__file__), "test_integration_1.2.fq")
+        read_length = 150
+        # generate reads with no sequencing errors to make comparison back
+        # to reference easy:
+        args = [
+            "--seed", "12345678",
+            "--sample-name", "c9a6be94-bdb7-4c0d-a89d-4addbf76e486",
+            "--vcf-input", self.vcfindel,
+            "--num-pairs", "320",
+            "--error-rate", "0",
+            "--length1", str(read_length),
+            "--length2", str(read_length),
+            self.fa2,
+            out1,
+            out2]
+        qasim.workflow(qasim.get_args(args))
+        ref = next(qasim.read_fasta(self.fa2))
+        # pad with ' ' to make 1-based reference sequence as a string
+        ref_seq = ' ' + ''.join(base(b) for b in ref.seqA)
+        self.assertEqual(ref_seq[1:33], "AAAAAAAACCCCCCCCGGGGGGGGTTTTTTTT")
+        fq1 = Fastq(out1)
+        fq2 = Fastq(out2)
+        # The VCF specifies a homozygous insertion A>ACG at POS=401:
+        pos = 401
+        ins_reads = fq1.coverage(pos) + fq2.coverage(pos)
+
+        # Check the forward reads over the insertion
+        fwd_reads = [r for r in ins_reads if
+                     r['read'] == 1 and r['frag_start'] < r['frag_end'] or
+                     r['read'] == 2 and r['frag_start'] > r['frag_end']]
+        for r in fwd_reads:
+            read_start = min(r['frag_start'], r['frag_end'])
+            for i, b in enumerate(r['seq']):
+                b_pos = read_start + i
+                if b_pos <= pos:
+                    self.assertEqual(b, ref_seq[b_pos])
+                elif b_pos == pos + 1:
+                    self.assertEqual(b, 'C')
+                elif b_pos == pos + 2:
+                    self.assertEqual(b, 'G')
+                else:
+                    self.assertEqual(b, ref_seq[b_pos - 2])
+
+        # Check the reverse reads over the insertion
+        rev_reads = [r for r in ins_reads if
+                     r['read'] == 1 and r['frag_start'] > r['frag_end'] or
+                     r['read'] == 2 and r['frag_start'] < r['frag_end']]
+        for r in rev_reads:
+            read_start = max(r['frag_start'], r['frag_end'])
+            if read_start == pos :
+                # skip reverse reads whose start coord (far end) is /exactly/
+                # pos since the indel isn't actually contained in these reads
+                continue
+            for i, b in enumerate(r['seq']):
+                # b_pos is decreasing as we read backwards
+                b_pos = read_start - i
+                b = Fastq.complement[b]
+                if b_pos > pos:
+                    self.assertEqual(b, ref_seq[b_pos])
+                elif b_pos == pos:
+                    self.assertEqual(b, 'G')
+                elif b_pos == pos - 1:
+                    self.assertEqual(b, 'C')
+                else:
+                    self.assertEqual(b, ref_seq[b_pos + 2])
+
+        # The VCF specifies a homozygous deletion AAA>A at POS=1201.
+        pos = 1201
+        del_reads = fq1.coverage(pos) + fq2.coverage(pos)
+
+        # Check the forward reads over the deletion
+        fwd_reads = [r for r in del_reads if
+                     r['read'] == 1 and r['frag_start'] < r['frag_end'] or
+                     r['read'] == 2 and r['frag_start'] > r['frag_end']]
+        for r in fwd_reads:
+            read_start = min(r['frag_start'], r['frag_end'])
+            for i, b in enumerate(r['seq']):
+                b_pos = read_start + i
+                if b_pos <= pos:
+                    self.assertEqual(b, ref_seq[b_pos])
+                else:
+                    self.assertEqual(b, ref_seq[b_pos + 2])
+
+        # Check the reverse reads over the deletion
+        rev_reads = [r for r in del_reads if
+                     r['read'] == 1 and r['frag_start'] > r['frag_end'] or
+                     r['read'] == 2 and r['frag_start'] < r['frag_end']]
+        for r in rev_reads:
+            read_start = max(r['frag_start'], r['frag_end'])
+            if read_start == pos :
+                # skip reverse reads whose start coord (far end) is /exactly/
+                # pos since the indel isn't actually contained in these reads
+                continue
+            for i, b in enumerate(r['seq']):
+                # b_pos is decreasing as we read backwards
+                b_pos = read_start - i
+                b = Fastq.complement[b]
+                if b_pos >= pos + 2:
+                    self.assertEqual(b, ref_seq[b_pos])
+                else:
+                    self.assertEqual(b, ref_seq[b_pos - 2])
+
+    def test_integration_2(self):
         """germline mode with mutations specified by input VCF"""
         # We take advantage of the fact that we know the true location
         # of the generated reads on the reference (from the coord1_coord2
         # embedded in read ids) to check SNP genotypes at positions without
         # having to align the reads first. This wouldn't be straightforward
         # for indels because the insertion/deletion shifts the coordinates.
-        out1 = path_join(dirname(__file__), "test_integration_1.1.fq")
-        out2 = path_join(dirname(__file__), "test_integration_1.2.fq")
+        out1 = path_join(dirname(__file__), "test_integration_2.1.fq")
+        out2 = path_join(dirname(__file__), "test_integration_2.2.fq")
         read_length = 150
         args = [
             "--seed", "12345678",
@@ -493,10 +633,10 @@ class TestQasim(unittest.TestCase):
         self.assertAlmostEqual(frac_A, 0.0, delta=0.1)
         self.assertAlmostEqual(frac_C, 1.0, delta=0.1)
 
-    def test_integration_2(self):
+    def test_integration_3(self):
         """somatic mode with mutations specified by input VCFs"""
-        out1 = path_join(dirname(__file__), "test_integration_2.1.fq")
-        out2 = path_join(dirname(__file__), "test_integration_2.2.fq")
+        out1 = path_join(dirname(__file__), "test_integration_3.1.fq")
+        out2 = path_join(dirname(__file__), "test_integration_3.2.fq")
         read_length = 150
         contamination = 0.3
         args = [
@@ -515,7 +655,7 @@ class TestQasim(unittest.TestCase):
             out1,
             out2]
         qasim.workflow(qasim.get_args(args))
-        # see comments in test_integration_1
+        # see comments in test_integration_2
         fq1 = Fastq.forwardize(Fastq(out1))
         fq2 = Fastq.forwardize(Fastq(out2))
         # Verify that a germline variant is still present in the somatic reads
@@ -563,39 +703,6 @@ class TestQasim(unittest.TestCase):
         self.assertAlmostEqual(frac_A3, 0.5 * (1 + contamination), delta=0.1)
         frac_G3 = pos3_bases.count('G')/float(len(pos3_bases))
         self.assertAlmostEqual(frac_G3, 0.5 * (1 - contamination), delta=0.1)
-
-    def test_integration_3(self):
-        """check for any & all changes to output"""
-        out1 = path_join(dirname(__file__), "test_integration_3.1.fq")
-        out2 = path_join(dirname(__file__), "test_integration_3.2.fq")
-        read_length = 150
-        contamination = 0.3
-        args = [
-            "--seed", "12345678",
-            "--sample-name", "c9a6be94-bdb7-4c0d-a89d-4addbf76e486",
-            "--vcf-input", self.vcfgrm,
-            "--somatic-mode",
-            "--sample-name2", "d44d739c-0143-4350-bba5-72dd068e05fd",
-            "--contamination", str(contamination),
-            "--vcf-input2", self.vcfsom,
-            "--num-pairs", "320",
-            "--quals-from", self.qpxml,
-            "--length1", str(read_length),
-            "--length2", str(read_length),
-            self.fa1,
-            out1,
-            out2]
-        qasim.workflow(qasim.get_args(args))
-        # There's no complicated logic here, just run a deterministic workflow
-        # and compare the output to what it was when we wrote the tests.
-        with open(out1) as test, open(self.fq1) as original:
-            test_content = test.readlines()
-            original_content = original.readlines()
-            self.assertEqual(test_content, original_content)
-        with open(out2) as test, open(self.fq2) as original:
-            test_content = test.readlines()
-            original_content = original.readlines()
-            self.assertEqual(test_content, original_content)
 
 
 if __name__ == '__main__':
