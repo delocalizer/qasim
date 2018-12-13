@@ -4,3 +4,4 @@ qasim/*.so
 Qasim.egg-info*
 *.swp
 tests/*.fq
+dist/*

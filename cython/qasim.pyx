@@ -707,11 +707,13 @@ def get_args(argv):
     rdsgrp.add_argument('-1', '--length1', help='length of read 1', type=int, default=100)
     rdsgrp.add_argument('-2', '--length2', help='length of read 2', type=int, default=100)
     rdsgrp.add_argument('-A', '--ambig-frac', help='discard read if fraction of "N" bases exceeds this', type=float, default=0.05, choices=[Range(0.0,1.0)])
-    rdsgrp.add_argument('--num-quals', help='number of quality strings to generate from distribution file', type=int, default=1000)
 
     rdsgrperr = rdsgrp.add_mutually_exclusive_group()
     rdsgrperr.add_argument('-e', '--error-rate', help='read error rate (constant)', type=float, default=0.002, choices=[Range(0.0,1.0)])
     rdsgrperr.add_argument('-Q', '--quals-from', help='generate random quality strings from the distribution specified in file', type=str)
+    # --num-quals is part of rdsgrp but leave it here after --quals-from
+    # so it's grouped logically in -h, --help output
+    rdsgrp.add_argument('--num-quals', help='number of quality strings to generate from distribution file', type=int, default=1000)
 
     othgrp = p.add_argument_group('Other')
     othgrp.add_argument('-d', '--seed', help='seed for random generator (default=current time)', type=int, default=datetime.now().strftime('%s'))
