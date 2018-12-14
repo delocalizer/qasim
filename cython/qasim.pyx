@@ -79,12 +79,11 @@ HELP_WGSIM_MODE = (
 HELP_READS = (
     'If -e is specified then a fixed error rate (and quality string) is used '
     'along the entire read. If -Q is specified then quality scores will be '
-    'randomly generated according to the distribution specified in the file, '
-    'and the error rate and quality value is calculated per base. The file '
-    'specified by -Q should be a qprofiler-like XML document with a <QUAL> '
-    'element containing <Cycle> and <TallyItem> elements with "count" and '
-    '"value" attributes. If -Q is specified, read1 and read2 lengths must be '
-    'the same.')
+    'randomly generated according to the distributions specified in the two '
+    'files, and the error rate and quality value is calculated per base. The '
+    'files specified by -Q should be qprofiler-like XML documents with <QUAL> '
+    'elements containing <Cycle> and <TallyItem> elements with "count" and '
+    '"value" attributes.')
 MSG_CTOR_SEQ_OR_SIZE = (
     'DipSeq constructor must get a sequence or size, not both.\n')
 MSG_NO_SYNC_REF = (
@@ -710,10 +709,10 @@ def get_args(argv):
 
     rdsgrperr = rdsgrp.add_mutually_exclusive_group()
     rdsgrperr.add_argument('-e', '--error-rate', help='read error rate (constant)', type=float, default=0.002, choices=[Range(0.0,1.0)])
-    rdsgrperr.add_argument('-Q', '--quals-from', help='generate random quality strings from the distribution specified in file', type=str)
+    rdsgrperr.add_argument('-Q', '--quals-from', help='generate random quality strings for read 1 and read 2 respectively from the distributions specified in the files', action='append', nargs=2, metavar=('R1_QUALS', 'R2_QUALS'))
     # --num-quals is part of rdsgrp but leave it here after --quals-from
     # so it's grouped logically in -h, --help output
-    rdsgrp.add_argument('--num-quals', help='number of quality strings to generate from distribution file', type=int, default=1000)
+    rdsgrp.add_argument('--num-quals', help='number of quality strings to generate from distribution files', type=int, default=1000)
 
     othgrp = p.add_argument_group('Other')
     othgrp.add_argument('-d', '--seed', help='seed for random generator (default=current time)', type=int, default=datetime.now().strftime('%s'))
@@ -732,10 +731,6 @@ def get_args(argv):
     if args.somatic_mode and not args.vcf_input2 and not args.output2:
         p.error(
             'one of --output2 or --vcf-input2 is required when specifying somatic mode')
-
-    if args.quals_from and args.length1 != args.length2:
-        p.error(
-            'read 1 and 2 lengths must be the same when specifying -Q, --quals-from')
 
     return args
 
