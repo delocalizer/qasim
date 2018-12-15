@@ -39,8 +39,8 @@ cdef extern int genreads(FILE *fpout1,
                          double ambig_frac,
                          const char *seqname,
                          int num_quals,
-                         double **p,
-                         char **q,
+                         double ***p,
+                         char ***q,
                          int wgsim_mode)
 
 
@@ -680,7 +680,7 @@ def get_args(argv):
     mutgrp.add_argument('-n', '--sample-name', help='name of sample for vcf output', type=str, default='SAMPLE')
 
     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)
-    mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt')) 
+    mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt'))
     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)
 
     mutgrp2 = p.add_argument_group(title='Somatic mutations', description=HELP_SOMATIC_MODE)
@@ -694,7 +694,7 @@ def get_args(argv):
     mutgrp2.add_argument('--sample-name2', help='name of sample for vcf2 output', type=str, default='SOMATIC')
 
     mutgrp2io = mutgrp2.add_mutually_exclusive_group()
-    mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt')) 
+    mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))
     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
 
     fragrp = p.add_argument_group('Fragments')
@@ -709,10 +709,10 @@ def get_args(argv):
 
     rdsgrperr = rdsgrp.add_mutually_exclusive_group()
     rdsgrperr.add_argument('-e', '--error-rate', help='read error rate (constant)', type=float, default=0.002, choices=[Range(0.0,1.0)])
-    rdsgrperr.add_argument('-Q', '--quals-from', help='generate random quality strings for read 1 and read 2 respectively from the distributions specified in the files', action='append', nargs=2, metavar=('R1_QUALS', 'R2_QUALS'))
+    rdsgrperr.add_argument('-Q', '--quals-from', help='generate random quality strings for read 1 and read 2 respectively from the distributions specified in the files', type=str, nargs=2, metavar=('R1_QUALS', 'R2_QUALS'))
     # --num-quals is part of rdsgrp but leave it here after --quals-from
     # so it's grouped logically in -h, --help output
-    rdsgrp.add_argument('--num-quals', help='number of quality strings to generate from distribution files', type=int, default=1000)
+    rdsgrp.add_argument('--num-quals', help='number of quality strings to generate from distribution files', type=int, default=10000)
 
     othgrp = p.add_argument_group('Other')
     othgrp.add_argument('-d', '--seed', help='seed for random generator (default=current time)', type=int, default=datetime.now().strftime('%s'))
@@ -741,9 +741,9 @@ def workflow(args):
     '''
 
     # variables from command line args
-    cdef str fasta = args.fasta, quals_from = args.quals_from, \
-        sample_name = args.sample_name, sample_name2 = args.sample_name2, \
-        vcf_input = args.vcf_input, vcf_input2 = args.vcf_input2
+    cdef str fasta = args.fasta, sample_name = args.sample_name, \
+        sample_name2 = args.sample_name2, vcf_input = args.vcf_input, \
+        vcf_input2 = args.vcf_input2, r1_quals, r2_quals
     cdef object read1fq = args.read1fq, read2fq = args.read2fq, \
         output = args.output, output2 = args.output2,
     cdef int max_insertion = args.max_insertion, size = args.size, \
@@ -765,10 +765,10 @@ def workflow(args):
     cdef DipSeq refseq, mutseq, mutseq2
     cdef FILE *fpout1
     cdef FILE *fpout2
-    cdef uint8_t[:, :] qvals
-    cdef double[:, :] pvals
-    cdef char **q = NULL
-    cdef double **p = NULL
+    cdef uint8_t[:, :, ::1] qvals
+    cdef double[:, :, ::1] pvals
+    cdef char **q[2]
+    cdef double **p[2]
 
     sys.stderr.write("[%s] seed = %i\n" % (__name__, seed))
     reseed(seed)
@@ -793,18 +793,22 @@ def workflow(args):
         else:
             vcf2 = VCF(sample_name2)
 
-    if quals_from:
-        qvals = np.ndarray((num_quals, length1), dtype='u1')
-        pvals = np.ndarray((num_quals, length1))
-        sys.stderr.write(
-            "[%s] generating qualities from %s\n" %
-            (__name__, quals_from))
-        gen_quals(quals_from, length1, num_quals, qvals, pvals)
-        q = <char**>calloc(num_quals, sizeof(char*))
-        p = <double**>calloc(num_quals, sizeof(double*))
-        for i in range(num_quals):
-            q[i] = <char*>&qvals[i, 0]
-            p[i] = <double*>&pvals[i, 0]
+    if args.quals_from:
+        r1_quals, r2_quals = args.quals_from
+        qvals = np.ndarray((2, num_quals, max(length1, length2)), order='C', dtype='u1')
+        pvals = np.ndarray((2, num_quals, max(length1, length2)), order='C')
+        for i, (quals_file, read_length) in \
+            enumerate(zip([r1_quals, r2_quals], [length1, length2])):
+            sys.stderr.write(
+                "[%s] generating qualities for read %s from %s\n" %
+                (__name__, i + 1, quals_file))
+            reseed(seed)
+            gen_quals(quals_file, read_length, num_quals, qvals[i], pvals[i])
+            q[i] = <char**>calloc(num_quals, sizeof(char*))
+            p[i] = <double**>calloc(num_quals, sizeof(double*))
+            for j in range(num_quals):
+                q[i][j] = <char*>&qvals[i, j, 0]
+                p[i][j] = <double*>&pvals[i, j, 0]
     else:
         # special value to indicate to genreads() to use fixed error rate
         num_quals = 0
@@ -909,7 +913,9 @@ def workflow(args):
     read1fq.close()
     read2fq.close()
 
-    free(p)
-    free(q)
+    if args.quals_from:
+        for i in range(2):
+            free(q[i])
+            free(p[i])
 
     return 0

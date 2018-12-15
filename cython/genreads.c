@@ -76,7 +76,7 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             uint32_t *rel1, uint32_t *rel2, uint32_t len1, uint32_t len2,
             uint64_t n_pairs, int dist, int std_dev, int size_l, int size_r, 
             double ERR_RATE, double MAX_N_RATIO, const char *seqname,
-            int num_quals, double **p, char **q, int wgsim_mode)
+            int num_quals, double ***p, char ***q, int wgsim_mode)
 {
     uint8_t *rseq[2] = { s1, s2 };      // base sequence
     uint32_t *rel[2] = { rel1, rel2 };  // reference-relative positions
@@ -152,8 +152,8 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             if (num_quals) {
                 ranq = (int)(drand48() * num_quals);
                 for (i = 0; i < s[j]; ++i) {
-                    qstr[j][i] = q[ranq][i] + 33;                        // qual string from distribution
-                    pvals[j][i] = p[ranq][i];
+                    qstr[j][i] = q[j][ranq][i] + 33;                     // qual string from distribution
+                    pvals[j][i] = p[j][ranq][i];
                 }
             } else {
                 for (i = 0; i < s[j]; ++i) qstr[j][i] = Q;               // qual string from fixed ERR_RATE

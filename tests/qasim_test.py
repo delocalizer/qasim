@@ -418,8 +418,8 @@ class TestQasim(unittest.TestCase):
         """check that P values match Q scores, and sample is representative"""
         read_length = 150
         num_quals = 10000
-        qvals = np.ndarray((num_quals, read_length), dtype='u1')
-        pvals = np.ndarray((num_quals, read_length))
+        qvals = np.ndarray((num_quals, read_length), dtype='u1', order="C")
+        pvals = np.ndarray((num_quals, read_length), order="C")
         qasim.gen_quals(self.qpxml, read_length, num_quals, qvals, pvals)
 
         for sample in range(num_quals):
@@ -455,7 +455,7 @@ class TestQasim(unittest.TestCase):
             "--contamination", str(contamination),
             "--vcf-input2", self.vcfsom,
             "--num-pairs", "320",
-            "--quals-from", self.qpxml,
+            "--quals-from", self.qpxml, self.qpxml,
             "--length1", str(read_length),
             "--length2", str(read_length),
             self.fa1,
@@ -592,8 +592,8 @@ class TestQasim(unittest.TestCase):
             "--seed", "12345678",
             "--sample-name", "c9a6be94-bdb7-4c0d-a89d-4addbf76e486",
             "--vcf-input", self.vcfgrm,
-            "--num-pairs", "160",
-            "--quals-from", self.qpxml,
+            "--num-pairs", "1280",
+            "--quals-from", self.qpxml, self.qpxml,
             "--length1", str(read_length),
             "--length2", str(read_length),
             self.fa1,
@@ -614,24 +614,24 @@ class TestQasim(unittest.TestCase):
         pos_bases = [r['seq'][pos - r['read_start']] for r in covering_reads]
         frac_A = pos_bases.count('A')/float(len(pos_bases))
         frac_C = pos_bases.count('C')/float(len(pos_bases))
-        self.assertAlmostEqual(frac_A, 0.5, delta=0.1)
-        self.assertAlmostEqual(frac_C, 0.5, delta=0.1)
+        self.assertAlmostEqual(frac_A, 0.5, delta=0.05)
+        self.assertAlmostEqual(frac_C, 0.5, delta=0.05)
         # A>C 1|0 SNP at position 161
         pos = 161
         covering_reads = fq1.coverage(pos) + fq2.coverage(pos)
         pos_bases = [r['seq'][pos - r['read_start']] for r in covering_reads]
         frac_A = pos_bases.count('A')/float(len(pos_bases))
         frac_C = pos_bases.count('C')/float(len(pos_bases))
-        self.assertAlmostEqual(frac_A, 0.5, delta=0.1)
-        self.assertAlmostEqual(frac_C, 0.5, delta=0.1)
+        self.assertAlmostEqual(frac_A, 0.5, delta=0.05)
+        self.assertAlmostEqual(frac_C, 0.5, delta=0.05)
         # A>C 1|1 SNP at position 241
         pos = 241
         covering_reads = fq1.coverage(pos) + fq2.coverage(pos)
         pos_bases = [r['seq'][pos - r['read_start']] for r in covering_reads]
         frac_A = pos_bases.count('A')/float(len(pos_bases))
         frac_C = pos_bases.count('C')/float(len(pos_bases))
-        self.assertAlmostEqual(frac_A, 0.0, delta=0.1)
-        self.assertAlmostEqual(frac_C, 1.0, delta=0.1)
+        self.assertAlmostEqual(frac_A, 0.0, delta=0.05)
+        self.assertAlmostEqual(frac_C, 1.0, delta=0.05)
 
     def test_integration_3(self):
         """somatic mode with mutations specified by input VCFs"""
@@ -647,8 +647,8 @@ class TestQasim(unittest.TestCase):
             "--sample-name2", "d44d739c-0143-4350-bba5-72dd068e05fd",
             "--contamination", str(contamination),
             "--vcf-input2", self.vcfsom,
-            "--num-pairs", "320",
-            "--quals-from", self.qpxml,
+            "--num-pairs", "1280",
+            "--quals-from", self.qpxml, self.qpxml,
             "--length1", str(read_length),
             "--length2", str(read_length),
             self.fa1,
@@ -665,8 +665,8 @@ class TestQasim(unittest.TestCase):
         pos_bases = [r['seq'][pos - r['read_start']] for r in covering_reads]
         frac_A = pos_bases.count('A')/float(len(pos_bases))
         frac_C = pos_bases.count('C')/float(len(pos_bases))
-        self.assertAlmostEqual(frac_A, 0.5, delta=0.1)
-        self.assertAlmostEqual(frac_C, 0.5, delta=0.1)
+        self.assertAlmostEqual(frac_A, 0.5, delta=0.05)
+        self.assertAlmostEqual(frac_C, 0.5, delta=0.05)
         # A>ACG 0|1 insertion at position 881
         pos = 881
         # We look at only "original" forward reads because in the case of the
@@ -694,15 +694,15 @@ class TestQasim(unittest.TestCase):
                       for r in fwd_covering_reads
                       if pos + 2 - r['read_start'] < read_length]
         frac_A1 = pos1_bases.count('A')/float(len(pos1_bases))
-        self.assertAlmostEqual(frac_A1, 1.0, delta=0.1)
+        self.assertAlmostEqual(frac_A1, 1.0, delta=0.05)
         frac_A2 = pos2_bases.count('A')/float(len(pos2_bases))
-        self.assertAlmostEqual(frac_A2, 0.5 * (1 + contamination), delta=0.1)
+        self.assertAlmostEqual(frac_A2, 0.5 * (1 + contamination), delta=0.05)
         frac_C2 = pos2_bases.count('C')/float(len(pos2_bases))
-        self.assertAlmostEqual(frac_C2, 0.5 * (1 - contamination), delta=0.1)
+        self.assertAlmostEqual(frac_C2, 0.5 * (1 - contamination), delta=0.05)
         frac_A3 = pos3_bases.count('A')/float(len(pos3_bases))
-        self.assertAlmostEqual(frac_A3, 0.5 * (1 + contamination), delta=0.1)
+        self.assertAlmostEqual(frac_A3, 0.5 * (1 + contamination), delta=0.05)
         frac_G3 = pos3_bases.count('G')/float(len(pos3_bases))
-        self.assertAlmostEqual(frac_G3, 0.5 * (1 - contamination), delta=0.1)
+        self.assertAlmostEqual(frac_G3, 0.5 * (1 - contamination), delta=0.05)
 
 
 if __name__ == '__main__':
