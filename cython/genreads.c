@@ -104,7 +104,7 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
     for (ii = 0; ii != n_pairs; ++ii) { 
         double ransz, ranerr;
         int d, pos, s[2], is_flip = 0, ran01, ranq;
-        int n_err[2], ext_coor[2], j, k;
+        int n_err[2], ext_coor[2], j, k, r1r2;
         FILE *fpo[2];
 
         // generate the read sequences
@@ -123,37 +123,36 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             pos = (int)((target_len - d + 1) * drand48());
         } while (pos < 0 || pos + d - 1 >= (int)target_len);
 
-        // flip or not
+        // flip pair or not
         if (drand48() < 0.5) {
             fpo[0] = fpout1; fpo[1] = fpout2;
             s[0] = size[0]; s[1] = size[1];
         } else {
-            fpo[1] = fpout1; fpo[0] = fpout2;
-            s[1] = size[0]; s[0] = size[1];
             is_flip = 1;
+            fpo[0] = fpout2; fpo[1] = fpout1;
+            s[0] = size[1]; s[1] = size[0];
         }
 
-        // read 0
+        // tmp_seq[0] is first read if not is_flip, second read otherwise
         ext_coor[0] = target_rel[pos];
         for (i = pos, k = 0; k < s[0]; i++) { 
             tmp_seq[0][k++] = target[i];
         }
 
-        // read 1
+        // tmp_seq[1] is second read if not is_flip, first read otherwise
         ext_coor[1] = target_rel[pos + d -  1];
-        for (i = pos + d - 1, k = 0; k < s[1]; i--) {    
-            tmp_seq[1][k++] = target[i];
+        for (i = pos + d - 1, k = 0; k < s[1]; i--) {                    // reverse complement
+            tmp_seq[1][k++] = target[i] < 4? 3 - target[i] : 4;
         }
-
-        for (k = 0; k < s[1]; ++k) tmp_seq[1][k] = tmp_seq[1][k] < 4? 3 - tmp_seq[1][k] : 4; // complement
 
         // make quality strings
         for (j = 0; j < 2; j++) {
+            r1r2 = is_flip == 1? 1 - j : j;
             if (num_quals) {
                 ranq = (int)(drand48() * num_quals);
                 for (i = 0; i < s[j]; ++i) {
-                    qstr[j][i] = q[j][ranq][i] + 33;                     // qual string from distribution
-                    pvals[j][i] = p[j][ranq][i];
+                    qstr[j][i] = q[r1r2][ranq][i] + 33;                  // qual string from distribution
+                    pvals[j][i] = p[r1r2][ranq][i];
                 }
             } else {
                 for (i = 0; i < s[j]; ++i) qstr[j][i] = Q;               // qual string from fixed ERR_RATE
@@ -187,10 +186,13 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
         // print
         for (j = 0; j < 2; ++j) {
             fprintf(fpo[j], "@%s_%u_%u_e%d_e%d_%llx/%d\n", seqname,
-                    // wgsim always prints low_high 
-                    wgsim_mode==1? ext_coor[0] : is_flip==0? ext_coor[0] : ext_coor[1],
-                    wgsim_mode==1? ext_coor[1] : is_flip==0? ext_coor[1] : ext_coor[0],
-                    n_err[0], n_err[1], (long long)ii, j==0? is_flip+1 : 2-is_flip);
+                    // wgsim prints [0] then [1]
+                    wgsim_mode==1? ext_coor[0] : ext_coor[is_flip],
+                    wgsim_mode==1? ext_coor[1] : ext_coor[1 - is_flip],
+                    wgsim_mode==1? n_err[0] : n_err[is_flip],
+                    wgsim_mode==1? n_err[1] : n_err[1 - is_flip],
+                    (long long)ii,
+                    is_flip==0? j+1 : 2-j);
             for (i = 0; i < s[j]; ++i)
                 fputc("ACGTN"[(int)tmp_seq[j][i]], fpo[j]);
             fprintf(fpo[j], "\n+\n%s\n", qstr[j]);
