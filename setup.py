@@ -55,6 +55,7 @@ license = 'MIT'
 keywords = ['bioinformatics', 'simulation']
 url = "https://github.com/delocalizer/qasim"
 description = "Generate diploid mutations and simulate HTS reads"
+scripts = ["scripts/qasim_cli.py"]
 
 
 if HAVECYTHON:
@@ -83,4 +84,5 @@ setup(
     url = url,
     description = description,
     long_description = description,
+    scripts = scripts
 )
