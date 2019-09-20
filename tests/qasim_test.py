@@ -321,13 +321,16 @@ class TestTestUtils(unittest.TestCase):
         sys.stdout.flush()
         cls.fq1 = path_join(dirname(__file__), 'resources/test.30x.1.fq')
         cls.fq2 = path_join(dirname(__file__), 'resources/test.30x.2.fq')
+        cls.fq3 = path_join(dirname(__file__), 'resources/test.simple.1.fq')
 
     def test_Fastq(self):
         """Test the Fastq class"""
         fq1 = Fastq(self.fq1)
+        fq3 = Fastq(self.fq3)
         self.assertEqual(len(fq1.records), 160)
         self.assertEqual(fq1.read_length, 150)
         self.assertEqual(fq1.records[-1]['id'], "@TEST.1_965_1528_e0_e2_9f/1")
+        self.assertEqual(fq3.basecounts(), {'A': 128, 'C': 120, 'G': 98, 'T': 104})
 
     def test_forwardization_and_coverage(self):
         """Confirm that coverages calculated two ways agree"""
@@ -355,9 +358,14 @@ class TestQasim(unittest.TestCase):
         cls.fa0 = path_join(dirname(__file__), 'resources/test.fa.0')
         cls.fa1 = path_join(dirname(__file__), 'resources/test.fa.1')
         cls.fa2 = path_join(dirname(__file__), 'resources/test.fa.2')
+        cls.faA = path_join(dirname(__file__), 'resources/test.fa.A')
+        cls.faC = path_join(dirname(__file__), 'resources/test.fa.C')
+        cls.faG = path_join(dirname(__file__), 'resources/test.fa.G')
+        cls.faT = path_join(dirname(__file__), 'resources/test.fa.T')
         cls.vcfgrm = path_join(dirname(__file__), 'resources/germline.vcf')
         cls.vcfsom = path_join(dirname(__file__), 'resources/somatic.vcf')
         cls.vcfindel = path_join(dirname(__file__), 'resources/indel.vcf.1')
+        cls.vcfempty = path_join(dirname(__file__), 'resources/empty.vcf')
         cls.qpxml_R1 = path_join(dirname(__file__), 'resources/R1.qp.xml')
         cls.qpxml_R2 = path_join(dirname(__file__), 'resources/R2.qp.xml')
         cls.fq1 = path_join(dirname(__file__), 'resources/test.60x.1.fq')
@@ -680,8 +688,8 @@ class TestQasim(unittest.TestCase):
         # Contrast this to reverse reads where the end coordinate we get
         # from the read id is /after/ the insertion and all read positions
         # relative to it are shifted by len(insert_size).
-        # Considering only fwd reads makes this an imperfect test of reads
         #
+        # Considering only fwd reads makes this an imperfect test of reads
         # generated over indels but a better one will require proper
         # alignment to the reference.
         fwd_covering_reads = [
@@ -706,6 +714,45 @@ class TestQasim(unittest.TestCase):
         self.assertAlmostEqual(frac_A3, 0.5 * (1 + contamination), delta=delta)
         frac_G3 = pos3_bases.count('G')/float(len(pos3_bases))
         self.assertAlmostEqual(frac_G3, 0.5 * (1 - contamination), delta=delta)
+
+    def test_integration_4(self):
+        """check sample degradation conversion options"""
+        out1 = path_join(dirname(__file__), "test_integration_4.1.fq")
+        out2 = path_join(dirname(__file__), "test_integration_4.2.fq")
+        bases = ['A', 'C', 'T', 'G']
+        # these input fastas consist of a single base, repeated.
+        fastas = [self.faA, self.faC, self.faT, self.faG]
+        # conversion rate (probability)
+        rate = 0.1
+        for idx, (from_base, fasta) in enumerate(zip(bases, fastas)):
+            from_comp = bases[idx - 2]
+            for to_base in bases:
+                if to_base != from_base:
+                    conv = "--{}{}".format(from_base, to_base)
+                    with self.subTest(msg="{} {}".format(conv, rate)):
+                        # generate reads with no mutations or sequencing errors
+                        args = [
+                            "--seed", "12345",
+                            "--vcf-input", self.vcfempty,
+                            "--num-pairs", "5000",
+                            "--error-rate", "0",
+                            conv, str(rate),
+                            fasta,
+                            out1,
+                            out2]
+                        qasim.workflow(qasim.get_args(args))
+                        counts1 = Fastq(out1).basecounts()
+                        counts2 = Fastq(out2).basecounts()
+                        counts = {b: counts1.get(b, 0) + counts2.get(b, 0)
+                                for b in bases}
+                        rate_calc = counts[to_base]/(counts[to_base] +
+                                                     counts[from_base])
+                        # we expect half the reads to be the reverse complement
+                        # base: if that is the same as 'to_base' then
+                        # conversion rate calculation is slightly different:
+                        if to_base == from_comp:
+                            rate_calc = 2 * rate_calc - 1
+                        self.assertAlmostEqual(rate/rate_calc, 1.0, delta=0.01)
 
 
 if __name__ == '__main__':

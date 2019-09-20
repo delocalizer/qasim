@@ -76,7 +76,8 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             uint32_t *rel1, uint32_t *rel2, uint32_t len1, uint32_t len2,
             uint64_t n_pairs, int dist, int std_dev, int size_l, int size_r, 
             double ERR_RATE, double MAX_N_RATIO, const char *seqname,
-            int num_quals, double ***p, char ***q, int wgsim_mode)
+            int num_quals, double ***p, char ***q, double **conversions,
+            int wgsim_mode)
 {
     uint8_t *rseq[2] = { s1, s2 };      // base sequence
     uint32_t *rel[2] = { rel1, rel2 };  // reference-relative positions
@@ -102,9 +103,9 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
     Q = (ERR_RATE == 0.0)? 'I' : (int)(-10.0 * log(ERR_RATE) / log(10.0) + 0.499) + 33;
 
     for (ii = 0; ii != n_pairs; ++ii) { 
-        double ransz, ranerr;
+        double ransz, convrate, ranerr;
         int d, pos, s[2], is_flip = 0, ran01, ranq;
-        int n_err[2], ext_coor[2], j, k, r1r2;
+        int n_err[2], ext_coor[2], j, k, r1r2, to_base;
         FILE *fpo[2];
 
         // generate the read sequences
@@ -159,21 +160,31 @@ int genreads(FILE *fpout1, FILE *fpout2, uint8_t *s1, uint8_t *s2,
             } 
         }
 
-        // generate sequencing errors
+        // generate random conversions & sequencing errors
         for (j = 0; j < 2; ++j) {
             int n_n = 0;
             for (i = 0; i < s[j]; ++i) {
                 int c = tmp_seq[j][i];
                 ranerr = drand48();
-                if (c >= 4) { 
+                if (c < 4) {
+                    // conversions
+                    for (to_base = 0; to_base < 4; ++to_base) {
+                        convrate = conversions[c][to_base];
+                        if (c != to_base && convrate > 0 && drand48() < convrate) {
+                            c = to_base;
+                        }
+                    }
+                    // sequencing error
+                    if ((num_quals && (ranerr < pvals[j][i])) ||   // error from qual score
+                       (!num_quals && (ranerr < ERR_RATE))){       // error from fixed rate
+                        c = (c + (int)(drand48() * 3.0 + 1)) & 3;
+                        ++n_err[j];
+                    }                   
+                } else {
+                    // ambiguous
                     c = 4;
                     ++n_n;
-                } else if ((num_quals && (ranerr < pvals[j][i])) ||   // error from qual score
-                          (!num_quals && (ranerr < ERR_RATE))){       // error from fixed rate
-                    c = (c + (int)(drand48() * 3.0 + 1)) & 3;         // random sequencing errors
-                    //c = (c + 1) & 3;                                // recurrent sequencing errors
-                    ++n_err[j];
-                }
+                } 
                 tmp_seq[j][i] = c;
             }
             if ((double)n_n / s[j] > MAX_N_RATIO) break;

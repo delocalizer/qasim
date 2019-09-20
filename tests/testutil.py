@@ -112,6 +112,14 @@ class Fastq:
                     covering.append(r)
             return covering
 
+    def basecounts(self):
+        """Return a dict of { base: count } aggregated over all reads"""
+        counts = {}
+        for r in self.records:
+            for base in r['seq']:
+                counts[base] = counts.setdefault(base, 0) + 1
+        return counts
+
     @classmethod
     def forwardize(cls, original):
         """Return a copy of original with all reads turned into forward reads:

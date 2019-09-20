@@ -41,6 +41,7 @@ cdef extern int genreads(FILE *fpout1,
                          int num_quals,
                          double ***p,
                          char ***q,
+                         double **conversions,
                          int wgsim_mode)
 
 
@@ -76,6 +77,11 @@ HELP_WGSIM_MODE = (
     'In this mode insertions are generated using the same logic as original wgsim.c'
     ' - i.e. max_insertion is set to 4, and insert bases are reversed with respect '
     'to generation order.')
+HELP_FRAGMENTS = (
+    'The transition/transversion rates represent the chance that the given random '
+    'base conversion occurs at any position. This is applied after fragment '
+    'generation but before sequencing read error, and can be used to model sample '
+    'degradation, e.g. with a non-zero C>T rate for FFPE samples.')
 HELP_READS = (
     'If -e is specified then a fixed error rate (and quality string) is used '
     'along the entire read. If -Q is specified then quality scores will be '
@@ -697,9 +703,21 @@ def get_args(argv):
     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))
     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
 
-    fragrp = p.add_argument_group('Fragments')
+    fragrp = p.add_argument_group('Fragments', description=HELP_FRAGMENTS)
     fragrp.add_argument('-z', '--size', help='mean fragment size', type=int, default=500)
     fragrp.add_argument('-s', '--std-dev', help='fragment standard deviation', type=int, default=50)
+    fragrp.add_argument('--AC', help='A>C transversion rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--AG', help='A>G transition rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--AT', help='A>T transversion rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--CA', help='C>A transversion rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--CG', help='C>G transversion rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--CT', help='C>T transition rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--GA', help='G>A transition rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--GC', help='G>C transversion rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--GT', help='G>T transversion rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--TA', help='T>A transversion rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--TC', help='T>C transition rate', type=float, choices=[Range(0.0,1.0)])
+    fragrp.add_argument('--TG', help='T>G transversion rate', type=float, choices=[Range(0.0,1.0)])
 
     rdsgrp = p.add_argument_group('Reads', description=HELP_READS)
     rdsgrp.add_argument('-N', '--num-pairs', help='number of read pairs', type=int, default=1000000)
@@ -767,6 +785,7 @@ def workflow(args):
     cdef FILE *fpout2
     cdef uint8_t[:, :, ::1] qvals
     cdef double[:, :, ::1] pvals
+    cdef double *conversions[4]
     cdef char **q[2]
     cdef double **p[2]
 
@@ -812,6 +831,22 @@ def workflow(args):
     else:
         # special value to indicate to genreads() to use fixed error rate
         num_quals = 0
+
+    for i in range(4):                                                          
+        conversions[i] = <double*>calloc(4, sizeof(double))   
+    # use -1 as unambiguous 'not set' value
+    conversions[0][1] = -1 if args.AC is None else args.AC
+    conversions[0][2] = -1 if args.AG is None else args.AG
+    conversions[0][3] = -1 if args.AT is None else args.AT
+    conversions[1][0] = -1 if args.CA is None else args.CA
+    conversions[1][2] = -1 if args.CG is None else args.CG
+    conversions[1][3] = -1 if args.CT is None else args.CT
+    conversions[2][0] = -1 if args.GA is None else args.GA
+    conversions[2][1] = -1 if args.GC is None else args.GC
+    conversions[2][3] = -1 if args.GT is None else args.GT
+    conversions[3][0] = -1 if args.TA is None else args.TA
+    conversions[3][1] = -1 if args.TC is None else args.TC
+    conversions[3][2] = -1 if args.TG is None else args.TG
 
     for refseq in read_fasta(fasta):
         n_ref += 1
@@ -862,7 +897,7 @@ def workflow(args):
                      mutseq.stopA, mutseq.stopB,
                      n_grm, size, std_dev, length1, length2,
                      error_rate, ambig_frac, bseqid, num_quals, p, q,
-                     int(WGSIM_MODE))
+                     conversions, int(WGSIM_MODE))
 
         if somatic_mode:
             mutseq2size = <int>(1.1 * mutseq.seqA.shape[0] + 10 * max_insertion2)
@@ -898,7 +933,7 @@ def workflow(args):
                          mutseq2.stopA, mutseq2.stopB,
                          n_som, size, std_dev, length1, length2,
                          error_rate, ambig_frac, bseqid, num_quals, p, q,
-                         int(WGSIM_MODE))
+                         conversions, int(WGSIM_MODE))
 
     if not vcf_input:
         vcf.write(output)
