@@ -46,7 +46,7 @@ include_dirs = ['cython', np_get_include()]
 ext_modules = []
 packages = ['qasim']
 package_dir = {'qasim':'qasim'}
-version = '1.8.0'
+version = '1.9.0'
 author = 'Conrad Leonard'
 author_email = 'conrad.leonard@hotmail.com'
 platforms = ['linux']
@@ -55,6 +55,7 @@ license = 'MIT'
 keywords = ['bioinformatics', 'simulation']
 url = "https://github.com/delocalizer/qasim"
 description = "Generate diploid mutations and simulate HTS reads"
+scripts = ["scripts/qasim_cli.py"]
 
 
 if HAVECYTHON:
@@ -83,4 +84,5 @@ setup(
     url = url,
     description = description,
     long_description = description,
+    scripts = scripts
 )
