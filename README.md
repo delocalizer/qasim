@@ -31,7 +31,7 @@ The principal additional features are:
 # help
 
 ```bash
-python3 -m qasim.qasim_cli -h
+qasim_cli.py -h
 
 usage: qasim_cli.py [-h] [-r {Range 0.0<=<1.0}] [-H {Range 0.0<=<1.0}]
                     [-R {Range 0.0<=<1.0}] [-X {Range 0.0<=<1.0}]
@@ -45,8 +45,14 @@ usage: qasim_cli.py [-h] [-r {Range 0.0<=<1.0}] [-H {Range 0.0<=<1.0}]
                     [--contamination {Range 0.0<=<1.0}]
                     [--sample-name2 SAMPLE_NAME2]
                     [--output2 VCF2 | --vcf-input2 VCF_INPUT2] [-z SIZE]
-                    [-s STD_DEV] [-N NUM_PAIRS] [-1 LENGTH1] [-2 LENGTH2]
-                    [-A {Range 0.0<=<1.0}]
+                    [-s STD_DEV] [--AC {Range 0.0<=<1.0}]
+                    [--AG {Range 0.0<=<1.0}] [--AT {Range 0.0<=<1.0}]
+                    [--CA {Range 0.0<=<1.0}] [--CG {Range 0.0<=<1.0}]
+                    [--CT {Range 0.0<=<1.0}] [--GA {Range 0.0<=<1.0}]
+                    [--GC {Range 0.0<=<1.0}] [--GT {Range 0.0<=<1.0}]
+                    [--TA {Range 0.0<=<1.0}] [--TC {Range 0.0<=<1.0}]
+                    [--TG {Range 0.0<=<1.0}] [-N NUM_PAIRS] [-1 LENGTH1]
+                    [-2 LENGTH2] [-A {Range 0.0<=<1.0}]
                     [-e {Range 0.0<=<1.0} | -Q R1_QUALS R2_QUALS]
                     [--num-quals NUM_QUALS] [-d SEED] [-t] [-w]
                     fasta read1fq read2fq
@@ -113,9 +119,38 @@ Somatic mutations:
                         instead of randomly generating them (default: None)
 
 Fragments:
+  The transition/transversion rates represent the chance that the given
+  random base conversion occurs at any position. This is applied after
+  fragment generation but before sequencing read error, and can be used to
+  model sample degradation, e.g. with a non-zero C>T rate for FFPE samples.
+
   -z SIZE, --size SIZE  mean fragment size (default: 500)
   -s STD_DEV, --std-dev STD_DEV
                         fragment standard deviation (default: 50)
+  --AC {Range 0.0<=<1.0}
+                        A>C transversion rate (default: None)
+  --AG {Range 0.0<=<1.0}
+                        A>G transition rate (default: None)
+  --AT {Range 0.0<=<1.0}
+                        A>T transversion rate (default: None)
+  --CA {Range 0.0<=<1.0}
+                        C>A transversion rate (default: None)
+  --CG {Range 0.0<=<1.0}
+                        C>G transversion rate (default: None)
+  --CT {Range 0.0<=<1.0}
+                        C>T transition rate (default: None)
+  --GA {Range 0.0<=<1.0}
+                        G>A transition rate (default: None)
+  --GC {Range 0.0<=<1.0}
+                        G>C transversion rate (default: None)
+  --GT {Range 0.0<=<1.0}
+                        G>T transversion rate (default: None)
+  --TA {Range 0.0<=<1.0}
+                        T>A transversion rate (default: None)
+  --TC {Range 0.0<=<1.0}
+                        T>C transition rate (default: None)
+  --TG {Range 0.0<=<1.0}
+                        T>G transversion rate (default: None)
 
 Reads:
   If -e is specified then a fixed error rate (and quality string) is used
@@ -147,11 +182,10 @@ Reads:
 
 Other:
   -d SEED, --seed SEED  seed for random generator (default=current time)
-                        (default: 1544852483)
+                        (default: 1569110424)
   -t, --test-output     print mutated sequences to stdout (default: False)
   -w, --wgsim-mode      In this mode insertions are generated using the same
                         logic as original wgsim.c - i.e. max_insertion is set
                         to 4, and insert bases are reversed with respect to
                         generation order. (default: False)
-
 ```
