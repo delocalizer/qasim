@@ -4,5 +4,6 @@ include setup.py
 include cython/*.c
 include cython/*.pyx
 include qasim/*.py
+include scripts/*.py
 include tests/*.py
 include tests/resources/*
