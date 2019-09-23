@@ -12,6 +12,9 @@ The principal additional features are:
 
 # build
 ```bash
+# clean
+./setup.py clean
+
 # build locally (requires Cython)
 ./setup.py build_ext --inplace
 
@@ -20,17 +23,11 @@ The principal additional features are:
 
 # install
 ./setup.py install
-
-# clean
-./setup.py clean
-
-# create distribution
-./setup.py sdist
 ```
 
 # help
 
-```bash
+<pre>
 qasim_cli.py -h
 
 usage: qasim_cli.py [-h] [-r {Range 0.0<=<1.0}] [-H {Range 0.0<=<1.0}]
@@ -188,4 +185,4 @@ Other:
                         logic as original wgsim.c - i.e. max_insertion is set
                         to 4, and insert bases are reversed with respect to
                         generation order. (default: False)
-```
+</pre>
