@@ -723,7 +723,7 @@ def get_args(argv):
     rdsgrp.add_argument('-N', '--num-pairs', help='number of read pairs', type=int, default=1000000)
     rdsgrp.add_argument('-1', '--length1', help='length of read 1', type=int, default=100)
     rdsgrp.add_argument('-2', '--length2', help='length of read 2', type=int, default=100)
-    rdsgrp.add_argument('-A', '--ambig-frac', help='discard read if fraction of "N" bases exceeds this', type=float, default=0.05, choices=[Range(0.0,1.0)])
+    rdsgrp.add_argument('-A', '--ambig-frac', help='discard read if fraction of "N" bases exceeds this', type=float, default=1.0, choices=[Range(0.0,1.0)])
 
     rdsgrperr = rdsgrp.add_mutually_exclusive_group()
     rdsgrperr.add_argument('-e', '--error-rate', help='read error rate (constant)', type=float, default=0.002, choices=[Range(0.0,1.0)])
