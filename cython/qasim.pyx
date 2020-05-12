@@ -391,7 +391,16 @@ cdef class DipSeq:
             # at given location tuples() returns snps, insertions then
             # deletions
             mutations = vcf.tuples()
-            CHROM, POS, REF, ALT, GT = mutations.__next__()
+            while True:
+                # Obtain first mutation to apply by advancing until we hit the
+                # first VCF record where CHROM matches seqid, or all VCF
+                # records are exhausted. The body of the transform method that
+                # follows assumes VCF records are ordered by POS for a given
+                # CHROM, but no particular order for CHROM blocks.
+                CHROM, POS, REF, ALT, GT = mutations.__next__()
+                if CHROM in (seqid, ''):
+                    break
+
             del_l = del_r = 0
             OLDPOS = 0
             while opos[allele] < ostop[allele]:
@@ -687,7 +696,7 @@ def get_args(argv):
 
     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)
     mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt'))
-    mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)
+    mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
 
     mutgrp2 = p.add_argument_group(title='Somatic mutations', description=HELP_SOMATIC_MODE)
     mutgrp2.add_argument('-S', '--somatic-mode', action='store_true')
@@ -701,7 +710,7 @@ def get_args(argv):
 
     mutgrp2io = mutgrp2.add_mutually_exclusive_group()
     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))
-    mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
+    mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
 
     fragrp = p.add_argument_group('Fragments', description=HELP_FRAGMENTS)
     fragrp.add_argument('-z', '--size', help='mean fragment size', type=int, default=500)
