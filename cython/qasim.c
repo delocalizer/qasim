@@ -3209,7 +3209,7 @@ static const char __pyx_k_s_generating_qualities_for_read[] = "[%s] generating q
 static const char __pyx_k_s_reading_mutations_from_file_s[] = "[%s] reading mutations from file %s (1)\n";
 static const char __pyx_k_s_skip_sequence_s_as_it_is_shor[] = "[%s] skip sequence '%s' as it is shorter than %d\n";
 static const char __pyx_k_unknown_dtype_code_in_numpy_pxd[] = "unknown dtype code in numpy.pxd (%d)";
-static const char __pyx_k_use_input_vcf_file_as_source_of[] = "use input vcf file as source of mutations instead of randomly generating them";
+static const char __pyx_k_use_input_vcf_file_as_source_of[] = "use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.";
 static const char __pyx_k_A_and_B_sequences_of_reference_a[] = "A and B sequences of reference are not haploid at %i'th value\n";
 static const char __pyx_k_A_and_B_sequences_of_reference_d[] = "A and B sequences of reference do not start at same relative position\n";
 static const char __pyx_k_Buffer_view_does_not_expose_stri[] = "Buffer view does not expose strides";
@@ -3251,7 +3251,7 @@ static const char __pyx_k_probability_an_indel_is_extended[] = "probability an i
 static const char __pyx_k_seed_for_random_generator_defaul[] = "seed for random generator (default=current time)";
 static const char __pyx_k_unable_to_allocate_shape_and_str[] = "unable to allocate shape and strides.";
 static const char __pyx_k_s_reading_mutations_from_file_s_2[] = "[%s] reading mutations from file %s (2)\n";
-static const char __pyx_k_use_input_vcf_file_as_source_of_2[] = "use input vcf file as source of somatic mutations instead of randomly generating them";
+static const char __pyx_k_use_input_vcf_file_as_source_of_2[] = "use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.";
 static const char __pyx_k_Format_string_allocated_too_shor_2[] = "Format string allocated too short.";
 static const char __pyx_k_fraction_of_somatic_mutations_th_2[] = "fraction of somatic mutations that are indels";
 static PyObject *__pyx_kp_b_;
@@ -14354,7 +14354,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
  * 
  *     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)             # <<<<<<<<<<<<<<
  *     mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt'))
- *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)
+ *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  */
   __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_mutgrp, __pyx_n_s_add_mutually_exclusive_group); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 697, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
@@ -14372,7 +14372,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
  * 
  *     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)
  *     mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt'))             # <<<<<<<<<<<<<<
- *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)
+ *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  * 
  */
   __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_mutgrpio, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 698, __pyx_L1_error)
@@ -14412,7 +14412,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
   /* "cython/qasim.pyx":699
  *     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)
  *     mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt'))
- *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)             # <<<<<<<<<<<<<<
+ *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)             # <<<<<<<<<<<<<<
  * 
  *     mutgrp2 = p.add_argument_group(title='Somatic mutations', description=HELP_SOMATIC_MODE)
  */
@@ -14429,7 +14429,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "cython/qasim.pyx":701
- *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)
+ *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  * 
  *     mutgrp2 = p.add_argument_group(title='Somatic mutations', description=HELP_SOMATIC_MODE)             # <<<<<<<<<<<<<<
  *     mutgrp2.add_argument('-S', '--somatic-mode', action='store_true')
@@ -14659,7 +14659,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
  * 
  *     mutgrp2io = mutgrp2.add_mutually_exclusive_group()             # <<<<<<<<<<<<<<
  *     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))
- *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
+ *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  */
   __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_mutgrp2, __pyx_n_s_add_mutually_exclusive_group); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 711, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
@@ -14685,7 +14685,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
  * 
  *     mutgrp2io = mutgrp2.add_mutually_exclusive_group()
  *     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))             # <<<<<<<<<<<<<<
- *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
+ *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  * 
  */
   __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_mutgrp2io, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 712, __pyx_L1_error)
@@ -14725,7 +14725,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
   /* "cython/qasim.pyx":713
  *     mutgrp2io = mutgrp2.add_mutually_exclusive_group()
  *     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))
- *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)             # <<<<<<<<<<<<<<
+ *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)             # <<<<<<<<<<<<<<
  * 
  *     fragrp = p.add_argument_group('Fragments', description=HELP_FRAGMENTS)
  */
@@ -14742,7 +14742,7 @@ static PyObject *__pyx_pf_5qasim_5qasim_9get_args(CYTHON_UNUSED PyObject *__pyx_
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "cython/qasim.pyx":715
- *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
+ *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  * 
  *     fragrp = p.add_argument_group('Fragments', description=HELP_FRAGMENTS)             # <<<<<<<<<<<<<<
  *     fragrp.add_argument('-z', '--size', help='mean fragment size', type=int, default=500)
@@ -37272,7 +37272,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)
  *     mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt'))             # <<<<<<<<<<<<<<
- *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)
+ *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  * 
  */
   __pyx_tuple__35 = PyTuple_Pack(2, __pyx_kp_s_o, __pyx_kp_s_output); if (unlikely(!__pyx_tuple__35)) __PYX_ERR(0, 698, __pyx_L1_error)
@@ -37282,7 +37282,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "cython/qasim.pyx":699
  *     mutgrpio = mutgrp.add_mutually_exclusive_group(required=True)
  *     mutgrpio.add_argument('-o', '--output', metavar='VCF', help='output generated mutations to file', type=argparse.FileType('wt'))
- *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them', type=str)             # <<<<<<<<<<<<<<
+ *     mutgrpio.add_argument('-V', '--vcf-input', help='use input vcf file as source of mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)             # <<<<<<<<<<<<<<
  * 
  *     mutgrp2 = p.add_argument_group(title='Somatic mutations', description=HELP_SOMATIC_MODE)
  */
@@ -37382,7 +37382,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *     mutgrp2io = mutgrp2.add_mutually_exclusive_group()
  *     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))             # <<<<<<<<<<<<<<
- *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
+ *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  * 
  */
   __pyx_tuple__45 = PyTuple_Pack(1, __pyx_kp_s_output2); if (unlikely(!__pyx_tuple__45)) __PYX_ERR(0, 712, __pyx_L1_error)
@@ -37392,7 +37392,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "cython/qasim.pyx":713
  *     mutgrp2io = mutgrp2.add_mutually_exclusive_group()
  *     mutgrp2io.add_argument('--output2', metavar='VCF2', help='output generated somatic mutations to file', type=argparse.FileType('wt'))
- *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)             # <<<<<<<<<<<<<<
+ *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)             # <<<<<<<<<<<<<<
  * 
  *     fragrp = p.add_argument_group('Fragments', description=HELP_FRAGMENTS)
  */
@@ -37401,7 +37401,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GIVEREF(__pyx_tuple__46);
 
   /* "cython/qasim.pyx":715
- *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them', type=str)
+ *     mutgrp2io.add_argument('--vcf-input2', help='use input vcf file as source of somatic mutations instead of randomly generating them. VCF records must be grouped by CHROM and ordered by POS within each CHROM.', type=str)
  * 
  *     fragrp = p.add_argument_group('Fragments', description=HELP_FRAGMENTS)             # <<<<<<<<<<<<<<
  *     fragrp.add_argument('-z', '--size', help='mean fragment size', type=int, default=500)
