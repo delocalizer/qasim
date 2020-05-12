@@ -391,7 +391,16 @@ cdef class DipSeq:
             # at given location tuples() returns snps, insertions then
             # deletions
             mutations = vcf.tuples()
-            CHROM, POS, REF, ALT, GT = mutations.__next__()
+            while True:
+                # Obtain first mutation to apply by advancing until we hit the
+                # first VCF record where CHROM matches seqid, or all VCF
+                # records are exhausted. The body of the transform method that
+                # follows assumes VCF records are ordered by POS for a given
+                # CHROM, but no particular order for CHROM blocks.
+                CHROM, POS, REF, ALT, GT = mutations.__next__()
+                if CHROM in (seqid, ''):
+                    break
+
             del_l = del_r = 0
             OLDPOS = 0
             while opos[allele] < ostop[allele]:
