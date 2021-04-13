@@ -1,5 +1,5 @@
 # qasim
-Simulate mutations, fragment generation and paired-end HTS reads on diploid genomes.
+Simulate mutations, fragment generation and paired-end HTS reads on diploid[1] genomes.
 
 This project started life as a fork of Heng Li's [wgsim](https://github.com/lh3/wgsim) tool, which has been fairly heavily revised as a Python C-extension module with unit tests and extra functionality.
 
@@ -157,3 +157,8 @@ Other:
                         is set to 4, and insert bases are reversed with respect to generation order. (default: False)
 
 </pre>
+
+***
+
+[1] For the purposes of sequence and fragment generation all contigs of the supplied reference are treated on equal footing
+    as representing   diploid chromosomes - in particular there is no special treatment of the different relative abundance of `MT` or the human sex allosomes. This means, for example, if it is important to generate approximately realistic relative coverage of the autosomes, `chrX` and `chrY` for a human male, separate simulations should be combined from a reference containing `chr1` - `chr22`, and another containing `chrX` and `chrY` with `--num-pairs` adjusted proportionally.
